@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+    <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+        <!--  BADGE NARANJA CON UNA "MORDIDA" EN LA ESQUINA SUPERIOR DERECHA  -->
+        <path android:fillColor="#FF7A00" android:pathData="M96.5,42.61 A44,44 0 1,1 65.39,11.5 A7.4,7.4 0 0,0 75.76,21.87 A7.4,7.4 0 0,0 86.13,32.24 A7.4,7.4 0 0,0 96.5,42.61 Z"/>
+        <group android:translateY="2">
+            <!--  CUERPO DEL FOODTRUCK  -->
+            <path android:fillColor="#FFF3E0" android:pathData="M28,40 H60 A4,4 0 0 1 64,44 V67 H24 V44 A4,4 0 0 1 28,40 Z"/>
+            <!--  CABINA  -->
+            <path android:fillColor="#FFF3E0" android:pathData="M64,50 H74 L82,58 V67 H64 Z"/>
+            <!--  VENTANA DE LA CABINA  -->
+            <path android:fillColor="#3E2723" android:pathData="M68,53 H73 L77,58 H68 Z"/>
+            <!--  VENTANA DE ATENCIÓN  -->
+            <path android:fillColor="#3E2723" android:pathData="M30,47 H58 V58 H30 Z"/>
+            <!--  MOSTRADOR  -->
+            <path android:fillColor="#FFB300" android:pathData="M28,58 H60 V60.5 H28 Z"/>
+            <!--  TOLDO RAYADO  -->
+            <path android:fillColor="#D84315" android:pathData="M27,40 H36 V47 A4.5,4.5 0 0 1 27,47 Z"/>
+            <path android:fillColor="#FFB300" android:pathData="M36,40 H45 V47 A4.5,4.5 0 0 1 36,47 Z"/>
+            <path android:fillColor="#D84315" android:pathData="M45,40 H54 V47 A4.5,4.5 0 0 1 45,47 Z"/>
+            <path android:fillColor="#FFB300" android:pathData="M54,40 H63 V47 A4.5,4.5 0 0 1 54,47 Z"/>
+            <!--  RUEDA TRASERA  -->
+            <path android:fillColor="#FF7A00" android:pathData="M29.8,68 A8.2,8.2 0 1,0 46.2,68 A8.2,8.2 0 1,0 29.8,68 Z"/>
+            <path android:fillColor="#3E2723" android:pathData="M31.8,68 A6.2,6.2 0 1,0 44.2,68 A6.2,6.2 0 1,0 31.8,68 Z"/>
+            <path android:fillColor="#FFF3E0" android:pathData="M35.6,68 A2.4,2.4 0 1,0 40.4,68 A2.4,2.4 0 1,0 35.6,68 Z"/>
+            <!--  RUEDA DELANTERA  -->
+            <path android:fillColor="#FF7A00" android:pathData="M63.8,68 A8.2,8.2 0 1,0 80.2,68 A8.2,8.2 0 1,0 63.8,68 Z"/>
+            <path android:fillColor="#3E2723" android:pathData="M65.8,68 A6.2,6.2 0 1,0 78.2,68 A6.2,6.2 0 1,0 65.8,68 Z"/>
+            <path android:fillColor="#FFF3E0" android:pathData="M69.6,68 A2.4,2.4 0 1,0 74.4,68 A2.4,2.4 0 1,0 69.6,68 Z"/>
+            <!--  FARO  -->
+            <path android:fillColor="#FFB300" android:pathData="M78.9,62.5 A1.6,1.6 0 1,0 82.1,62.5 A1.6,1.6 0 1,0 78.9,62.5 Z"/>
+            <!--  CHIMENEA  -->
+            <path android:fillColor="#3E2723" android:pathData="M47,37 H57 V40 H47 Z"/>
+            <!--  VAPOR  -->
+            <path android:pathData="M50,35 C48,33 52,31 50,28" android:strokeColor="#FFF3E0" android:strokeWidth="1.8" android:strokeLineCap="round"/>
+            <path android:pathData="M54,35 C52,33 56,31 54,28" android:strokeColor="#FFF3E0" android:strokeWidth="1.8" android:strokeLineCap="round"/>
+        </group>
+    </vector>
+

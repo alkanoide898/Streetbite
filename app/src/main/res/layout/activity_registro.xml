@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F7F5F2"
+    android:padding="30dp">
+
+
+
+    <!-- TÍTULO -->
+
+
+    <TextView
+        android:id="@+id/txtTituloRegistro"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Crear cuenta"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:textColor="#3E2723"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
+
+    <!-- DESCRIPCIÓN -->
+
+    <TextView
+        android:id="@+id/txtDescripcionRegistro"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Regístrate para comenzar a usar StreetBite"
+        android:textSize="14sp"
+        android:textColor="#795548"
+        app:layout_constraintTop_toBottomOf="@id/txtTituloRegistro"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
+    <!-- NOMBRE -->
+
+
+    <EditText
+        android:id="@+id/edtNombre"
+        android:layout_width="0dp"
+        android:layout_height="55dp"
+        android:layout_marginTop="35dp"
+        android:hint="Nombre"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="#3E2723"
+        android:textColorHint="#9E918A"
+        android:background="@drawable/bg_search"
+        android:singleLine="true"
+        android:inputType="textPersonName"
+        app:layout_constraintTop_toBottomOf="@id/txtDescripcionRegistro"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
+
+    <!-- CORREO -->
+
+
+    <EditText
+        android:id="@+id/edtCorreoRegistro"
+        android:layout_width="0dp"
+        android:layout_height="55dp"
+        android:layout_marginTop="12dp"
+        android:hint="Correo electrónico"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="#3E2723"
+        android:textColorHint="#9E918A"
+        android:background="@drawable/bg_search"
+        android:singleLine="true"
+        android:inputType="textEmailAddress"
+        app:layout_constraintTop_toBottomOf="@id/edtNombre"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
+
+    <!-- CONTRASEÑA -->
+
+
+    <EditText
+        android:id="@+id/edtPasswordRegistro"
+        android:layout_width="0dp"
+        android:layout_height="55dp"
+        android:layout_marginTop="12dp"
+        android:hint="Contraseña"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="#3E2723"
+        android:textColorHint="#9E918A"
+        android:background="@drawable/bg_search"
+        android:singleLine="true"
+        android:inputType="textPassword"
+        app:layout_constraintTop_toBottomOf="@id/edtCorreoRegistro"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
+
+    <!-- REPETIR CONTRASEÑA -->
+
+
+    <EditText
+        android:id="@+id/edtConfirmarPassword"
+        android:layout_width="0dp"
+        android:layout_height="55dp"
+        android:layout_marginTop="12dp"
+        android:hint="Repetir contraseña"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:textColor="#3E2723"
+        android:textColorHint="#9E918A"
+        android:background="@drawable/bg_search"
+        android:singleLine="true"
+        android:inputType="textPassword"
+        app:layout_constraintTop_toBottomOf="@id/edtPasswordRegistro"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
+
+    <!-- BOTÓN REGISTRARSE -->
+
+
+    <Button
+        android:id="@+id/btnRegistrar"
+        android:layout_width="0dp"
+        android:layout_height="55dp"
+        android:layout_marginTop="25dp"
+        android:text="Registrarse"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF"
+        android:backgroundTint="#8D6E63"
+        app:layout_constraintTop_toBottomOf="@id/edtConfirmarPassword"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
+
+    <!-- VOLVER AL LOGIN -->
+
+
+    <TextView
+        android:id="@+id/txtVolverLogin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="¿Ya tienes una cuenta? Inicia sesión"
+        android:textSize="14sp"
+        android:textColor="#795548"
+        app:layout_constraintTop_toBottomOf="@id/btnRegistrar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

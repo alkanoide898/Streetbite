@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- PERMISOS: INTERNET, RED Y UBICACIÓN (OpenStreetMap) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="StreetBite"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.StreetBite">
+
+        <!-- PANTALLA DE BIENVENIDA -->
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.StreetBite.Starting">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <!-- LOGIN Y RETORNO DESDE DISCORD -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask">
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="streetbite"
+                    android:host="login-callback" />
+            </intent-filter>
+
+        </activity>
+
+        <!-- PERFIL -->
+        <activity
+            android:name=".PerfilActivity"
+            android:exported="false" />
+
+        <!-- DETALLE FOODTRUCK -->
+        <activity
+            android:name=".DetalleFoodtruckActivity"
+            android:exported="false" />
+
+        <!-- REGISTRO -->
+        <activity
+            android:name=".RegistroActivity"
+            android:exported="false" />
+
+        <!-- MAPA -->
+        <activity
+            android:name=".MapActivity"
+            android:exported="false" />
+
+        <!-- HOME -->
+        <activity
+            android:name=".HomeActivity"
+            android:exported="false" />
+
+    </application>
+
+</manifest>

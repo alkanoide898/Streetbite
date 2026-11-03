@@ -1,0 +1,20 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#3E2723" android:clipChildren="false" android:clipToPadding="false">
+    <!--  LOGO CENTRADO (mismo lugar que el ícono del splash del sistema)  -->
+    <FrameLayout android:id="@+id/contenedorLogo" android:layout_width="216dp" android:layout_height="216dp" android:layout_centerInParent="true" android:clipChildren="false" android:clipToPadding="false">
+        <!--  ANILLOS QUE PULSAN DETRÁS DEL LOGO  -->
+        <View android:id="@+id/viewPulso1" android:layout_width="176dp" android:layout_height="176dp" android:layout_gravity="center" android:alpha="0" android:background="@drawable/bg_splash_pulso"/>
+        <View android:id="@+id/viewPulso2" android:layout_width="176dp" android:layout_height="176dp" android:layout_gravity="center" android:alpha="0" android:background="@drawable/bg_splash_pulso"/>
+        <ImageView android:id="@+id/imgLogoSplash" android:layout_width="match_parent" android:layout_height="match_parent" android:contentDescription="Logo de StreetBite" android:scaleType="fitCenter" android:src="@drawable/ic_streetbite_logo"/>
+    </FrameLayout>
+    <!--  NOMBRE Y LEMA  -->
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_below="@id/contenedorLogo" android:layout_marginTop="12dp" android:gravity="center_horizontal" android:orientation="vertical">
+        <TextView android:id="@+id/txtNombreSplash" android:layout_width="wrap_content" android:layout_height="wrap_content" android:alpha="0" android:fontFamily="sans-serif-black" android:text="StreetBite" android:textColor="#FFF3E0" android:textSize="40sp"/>
+        <TextView android:id="@+id/txtLemaSplash" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:alpha="0" android:gravity="center" android:letterSpacing="0.05" android:text="Encuentra tu próximo foodtruck" android:textColor="#D7CCC8" android:textSize="15sp"/>
+    </LinearLayout>
+    <!--  PUNTOS DE CARGA  -->
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentBottom="true" android:layout_centerHorizontal="true" android:layout_marginBottom="72dp" android:orientation="horizontal">
+        <View android:id="@+id/punto1" android:layout_width="10dp" android:layout_height="10dp" android:layout_margin="6dp" android:alpha="0.4" android:background="@drawable/bg_splash_dot" android:scaleX="0.6" android:scaleY="0.6"/>
+        <View android:id="@+id/punto2" android:layout_width="10dp" android:layout_height="10dp" android:layout_margin="6dp" android:alpha="0.4" android:background="@drawable/bg_splash_dot" android:scaleX="0.6" android:scaleY="0.6"/>
+        <View android:id="@+id/punto3" android:layout_width="10dp" android:layout_height="10dp" android:layout_margin="6dp" android:alpha="0.4" android:background="@drawable/bg_splash_dot" android:scaleX="0.6" android:scaleY="0.6"/>
+    </LinearLayout>
+</RelativeLayout>
