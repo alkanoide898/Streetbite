@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ítem compacto de la fila horizontal "Mejor calificados". -->
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="156dp"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="8dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@android:color/white"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="2dp"
+    app:cardUseCompatPadding="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/imgFoodtruck"
+            android:layout_width="match_parent"
+            android:layout_height="92dp"
+            android:background="@drawable/bg_image"
+            android:clipToOutline="true"
+            android:contentDescription="@string/foodtruck_imagen"
+            android:outlineProvider="background"
+            android:scaleType="centerCrop"
+            android:src="@drawable/tacos" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="14dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="14dp">
+
+            <TextView
+                android:id="@+id/txtNombreFoodtruck"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/sb_marron"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="Street Burger" />
+
+            <TextView
+                android:id="@+id/txtRatingFoodtruck"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/sb_texto_suave"
+                android:textSize="13sp"
+                tools:text="⭐ 4,9" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

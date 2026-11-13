@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">StreetBite</string>
+    <string name="foodtruck_imagen">Foto del foodtruck</string>
 </resources>

@@ -2,18 +2,19 @@ package com.chacho.streetbite;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.CheckBox;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
 
 import org.json.JSONObject;
 
 import java.util.Locale;
 
-public class PerfilActivity extends AppCompatActivity {
+public class PerfilActivity extends BaseActivity {
 
     private TextView txtInicial;
     private TextView txtNombre;
@@ -48,9 +49,7 @@ public class PerfilActivity extends AppCompatActivity {
                 Toast.makeText(this, "Notificaciones", Toast.LENGTH_SHORT).show()
         );
 
-        btnConfiguracion.setOnClickListener(v ->
-                Toast.makeText(this, "Configuración", Toast.LENGTH_SHORT).show()
-        );
+        btnConfiguracion.setOnClickListener(v -> mostrarConfiguracion());
 
         btnAyuda.setOnClickListener(v ->
                 Toast.makeText(this, "Ayuda y soporte", Toast.LENGTH_SHORT).show()
@@ -177,6 +176,34 @@ public class PerfilActivity extends AppCompatActivity {
                     }
                 }
         );
+    }
+
+    private void mostrarConfiguracion() {
+        CheckBox checkSonidos = new CheckBox(this);
+        checkSonidos.setText("Sonidos al tocar botones y tarjetas");
+        checkSonidos.setChecked(Sonidos.estaActivo(this));
+
+        checkSonidos.setOnCheckedChangeListener((boton, activo) -> {
+            Sonidos.activar(this, activo);
+
+            // Suena de inmediato para que se note el cambio.
+            if (activo) {
+                Sonidos.tocar(this, Sonidos.TAP);
+            }
+        });
+
+        int margen = Math.round(
+                20 * getResources().getDisplayMetrics().density);
+
+        FrameLayout contenedor = new FrameLayout(this);
+        contenedor.setPadding(margen, margen / 2, margen, 0);
+        contenedor.addView(checkSonidos);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Configuración")
+                .setView(contenedor)
+                .setPositiveButton("Listo", null)
+                .show();
     }
 
     private void mostrarInformacion() {

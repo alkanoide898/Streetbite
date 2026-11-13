@@ -1,5 +1,9 @@
 <resources>
-    <style name="Theme.StreetBite" parent="Theme.AppCompat.Light.NoActionBar"/>
+    <style name="Theme.StreetBite" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Transición compartida de la foto al abrir el detalle -->
+        <item name="android:windowActivityTransitions">true</item>
+        <item name="android:windowContentTransitions">true</item>
+    </style>
     <!--  Splash del sistema: mismo fondo que activity_splash.xml para que no se note el salto  -->
     <style name="Theme.StreetBite.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#3E2723</item>

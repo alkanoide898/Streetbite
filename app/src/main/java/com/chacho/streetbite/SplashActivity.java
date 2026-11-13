@@ -17,7 +17,6 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
@@ -27,7 +26,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SplashActivity extends AppCompatActivity {
+public class SplashActivity extends BaseActivity {
 
     // Tiempo mínimo para que se alcance a ver la animación
     private static final long DURACION_MINIMA_MS = 1800;
@@ -61,6 +60,12 @@ public class SplashActivity extends AppCompatActivity {
         }, DURACION_MINIMA_MS);
 
         verificarSesion();
+    }
+
+    /** El splash ocupa toda la pantalla: no lleva padding de barras. */
+    @Override
+    protected boolean usaBarrasDelSistema() {
+        return false;
     }
 
     // ==========================================

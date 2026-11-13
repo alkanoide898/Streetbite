@@ -7,11 +7,10 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
 
 import org.json.JSONObject;
 
-public class RegistroActivity extends AppCompatActivity {
+public class RegistroActivity extends BaseActivity {
 
     private Button btnRegistrar;
 

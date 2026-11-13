@@ -6,6 +6,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
@@ -50,6 +52,16 @@ public final class SupabaseHelper {
          * Se llama cuando no hay conexión con el servidor.
          * Por defecto se trata como un error normal.
          */
+        default void onSinConexion(String mensaje) {
+            onError(mensaje);
+        }
+    }
+
+    public interface FoodtrucksCallback {
+        void onSuccess(List<Foodtruck> foodtrucks);
+
+        void onError(String mensaje);
+
         default void onSinConexion(String mensaje) {
             onError(mensaje);
         }
@@ -329,6 +341,92 @@ public final class SupabaseHelper {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    // ============================================================
+    // FOODTRUCKS (PostgREST / tabla public.foodtrucks)
+    // ============================================================
+
+    /**
+     * Devuelve el catálogo completo desde public.foodtrucks.
+     * La lectura es pública (RLS permite SELECT a anon y authenticated),
+     * por eso usa la publishable key y no el access_token del usuario.
+     */
+    public static void listarFoodtrucks(FoodtrucksCallback callback) {
+
+        String url = SupabaseConfig.SUPABASE_URL
+                + "/rest/v1/foodtrucks"
+                + "?select=id,nombre,descripcion,categoria,rating,lat,lon,"
+                + "abierto,imagen,direccion,horario,telefono,instagram"
+                + "&order=rating.desc,nombre.asc";
+
+        Request solicitud = new Request.Builder()
+                .url(url)
+                .get()
+                .addHeader("apikey", SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                .addHeader(
+                        "Authorization",
+                        "Bearer " + SupabaseConfig.SUPABASE_PUBLISHABLE_KEY
+                )
+                .build();
+
+        CLIENT.newCall(solicitud).enqueue(new Callback() {
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e(TAG, "Error al cargar foodtrucks", e);
+
+                callback.onSinConexion(
+                        "No se pudo conectar con Supabase. "
+                                + "Revisa tu conexión."
+                );
+            }
+
+            @Override
+            public void onResponse(Call call, Response response)
+                    throws IOException {
+
+                try (Response respuesta = response) {
+                    String contenido = respuesta.body() != null
+                            ? respuesta.body().string()
+                            : "";
+
+                    if (!respuesta.isSuccessful()) {
+                        callback.onError(
+                                mensajeError(
+                                        parsear(contenido),
+                                        respuesta.code()
+                                )
+                        );
+                        return;
+                    }
+
+                    List<Foodtruck> foodtrucks = new ArrayList<>();
+
+                    try {
+                        JSONArray arreglo = new JSONArray(contenido);
+
+                        for (int i = 0; i < arreglo.length(); i++) {
+                            Foodtruck foodtruck = Foodtruck.desdeJson(
+                                    arreglo.optJSONObject(i)
+                            );
+
+                            if (foodtruck != null) {
+                                foodtrucks.add(foodtruck);
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.w(TAG, "Respuesta de foodtrucks no válida", e);
+                        callback.onError(
+                                "No se pudo leer el catálogo de foodtrucks."
+                        );
+                        return;
+                    }
+
+                    callback.onSuccess(foodtrucks);
+                }
+            }
+        });
     }
 
     // ============================================================
