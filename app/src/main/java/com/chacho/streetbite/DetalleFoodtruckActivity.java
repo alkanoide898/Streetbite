@@ -5,11 +5,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,9 +32,8 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         TextView txtTelefonoDetalle = findViewById(R.id.txtTelefonoDetalle);
         TextView txtInstagramDetalle = findViewById(R.id.txtInstagramDetalle);
         TextView btnVolverDetalle = findViewById(R.id.btnVolverDetalle);
-        TextView txtMenuSubtitulo = findViewById(R.id.txtMenuSubtitulo);
         TextView txtMenuVacio = findViewById(R.id.txtMenuVacio);
-        RecyclerView recyclerMenu = findViewById(R.id.recyclerMenu);
+        LinearLayout contenedorMenu = findViewById(R.id.contenedorMenu);
 
         // La foto viene desde la tarjeta con una transición compartida.
         String transicionFoto = getIntent().getStringExtra("transicion_foto");
@@ -83,7 +80,7 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         }
 
         mostrarLogo(imgDetalle, logo, imagen);
-        configurarMenu(recyclerMenu, txtMenuSubtitulo, txtMenuVacio, menu, nombre);
+        configurarMenu(contenedorMenu, txtMenuVacio, menu, nombre);
 
         if (direccion != null && !direccion.trim().isEmpty()) {
             txtDireccionDetalle.setText("📍 " + direccion);
@@ -151,11 +148,12 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         vista.setImageResource(respaldo);
     }
 
-    private void configurarMenu(RecyclerView recycler,
-                                TextView subtitulo,
+    private void configurarMenu(LinearLayout contenedor,
                                 TextView vacio,
                                 String[] menu,
                                 String nombreLocal) {
+
+        contenedor.removeAllViews();
 
         List<String> fotos = new ArrayList<>();
 
@@ -168,31 +166,80 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         }
 
         if (fotos.isEmpty()) {
-            recycler.setVisibility(View.GONE);
-            subtitulo.setVisibility(View.GONE);
+            contenedor.setVisibility(View.GONE);
             vacio.setVisibility(View.VISIBLE);
             return;
         }
 
-        subtitulo.setText(
-                fotos.size() == 1
-                        ? "1 foto de los platos"
-                        : fotos.size() + " fotos de los platos"
-        );
+        contenedor.setVisibility(View.VISIBLE);
+        vacio.setVisibility(View.GONE);
 
-        recycler.setLayoutManager(new GridLayoutManager(this, 2));
-        recycler.setAdapter(
-                new MenuAdapter(
-                        fotos,
-                        foto -> startActivity(
-                                FotoActivity.crearIntent(
-                                        this,
-                                        foto,
-                                        nombreLocal
-                                )
-                        )
-                )
-        );
+        String local = nombreLocal == null || nombreLocal.trim().isEmpty()
+                ? "este local"
+                : nombreLocal.trim();
+
+        float densidad = getResources().getDisplayMetrics().density;
+        int margen = Math.round(6f * densidad);
+
+        // Grilla simple de dos columnas: al no ser una lista que se recicla,
+        // el ScrollView del detalle puede desplazarse hasta el final.
+        for (int i = 0; i < fotos.size(); i += 2) {
+
+            LinearLayout fila = new LinearLayout(this);
+            fila.setOrientation(LinearLayout.HORIZONTAL);
+            fila.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+            ));
+
+            for (int columna = 0; columna < 2; columna++) {
+
+                int indice = i + columna;
+
+                if (indice >= fotos.size()) {
+                    // Relleno para que la última foto no se estire sola.
+                    View hueco = new View(this);
+                    hueco.setLayoutParams(
+                            new LinearLayout.LayoutParams(0, 1, 1f)
+                    );
+                    fila.addView(hueco);
+                    continue;
+                }
+
+                final String foto = fotos.get(indice);
+
+                View celda = getLayoutInflater().inflate(
+                        R.layout.item_menu_foto,
+                        fila,
+                        false
+                );
+
+                LinearLayout.LayoutParams parametros =
+                        new LinearLayout.LayoutParams(
+                                0,
+                                LinearLayout.LayoutParams.WRAP_CONTENT,
+                                1f
+                        );
+                parametros.setMargins(margen, margen, margen, margen);
+                celda.setLayoutParams(parametros);
+
+                ImageView imagen = celda.findViewById(R.id.imgMenuFoto);
+
+                imagen.setContentDescription(
+                        "Foto " + (indice + 1) + " del menú de " + local
+                );
+
+                Imagenes.cargar(imagen, foto, 180, 190);
+
+                celda.setOnClickListener(v -> startActivity(
+                        FotoActivity.crearIntent(this, foto, local)
+                ));
+
+                fila.addView(celda);
+            }
+
+            contenedor.addView(fila);
+        }
     }
 
     private void abrirUrl(String url) {

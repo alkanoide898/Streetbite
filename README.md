@@ -66,7 +66,6 @@ app/src/main/java/com/chacho/streetbite/
 ├── FotoActivity.java            # visor de fotos a pantalla completa
 ├── PerfilActivity.java          # perfil, configuración y logout
 ├── FoodtruckAdapter.java        # tarjetas, logos, DiffUtil y animaciones
-├── MenuAdapter.java             # grilla de fotos del menú
 ├── ZoomImageView.java           # zoom y arrastre en el visor
 ├── Imagenes.java                # carga de imágenes con caché y downsampling
 ├── FoodtruckRepositorio.java    # caché, carga remota y respaldo local
@@ -438,6 +437,8 @@ perfiles de otros usuarios.
 - `Imagenes.java` carga, redimensiona y cachea las fotos sin librerías externas.
 - West Burguers todavía no tiene material propio y conserva la ilustración de
   respaldo.
+- El menú del detalle se desplaza hasta la última foto y ya no muestra el
+  contador de fotos.
 
 ### 2026-11-12 — Animaciones de interfaz
 
