@@ -32,6 +32,17 @@ public final class SupabaseHelper {
 
     private static final String TABLA_USUARIOS = "/rest/v1/usuarios";
 
+    // Columnas del catálogo. Las fotos reales se agregaron después, así que
+    // existe una versión sin ellas para bases que todavía no se migraron.
+    private static final String CAMPOS_BASE =
+            "id,nombre,descripcion,categoria,rating,lat,lon,"
+                    + "abierto,imagen,direccion,horario,telefono,instagram";
+
+    private static final String CAMPOS_CON_FOTOS =
+            "id,nombre,descripcion,categoria,rating,lat,lon,"
+                    + "abierto,imagen,logo,menu,direccion,horario,"
+                    + "telefono,instagram";
+
     private static final OkHttpClient CLIENT = new OkHttpClient.Builder()
             .connectTimeout(20, TimeUnit.SECONDS)
             .readTimeout(20, TimeUnit.SECONDS)
@@ -353,11 +364,22 @@ public final class SupabaseHelper {
      * por eso usa la publishable key y no el access_token del usuario.
      */
     public static void listarFoodtrucks(FoodtrucksCallback callback) {
+        consultarFoodtrucks(CAMPOS_CON_FOTOS, callback, true);
+    }
+
+    /**
+     * Pide el catálogo con el listado de columnas indicado.
+     *
+     * Si la base todavía no tiene las columnas de fotos (código 42703),
+     * se reintenta una vez sin ellas para no perder el catálogo remoto.
+     */
+    private static void consultarFoodtrucks(String campos,
+                                            FoodtrucksCallback callback,
+                                            boolean permiteReintento) {
 
         String url = SupabaseConfig.SUPABASE_URL
                 + "/rest/v1/foodtrucks"
-                + "?select=id,nombre,descripcion,categoria,rating,lat,lon,"
-                + "abierto,imagen,direccion,horario,telefono,instagram"
+                + "?select=" + campos
                 + "&order=rating.desc,nombre.asc";
 
         Request solicitud = new Request.Builder()
@@ -392,6 +414,24 @@ public final class SupabaseHelper {
                             : "";
 
                     if (!respuesta.isSuccessful()) {
+
+                        // 400: la tabla aún no tiene logo/menu. Se reintenta
+                        // con las columnas base para conservar los datos reales.
+                        if (permiteReintento && respuesta.code() == 400) {
+                            Log.w(
+                                    TAG,
+                                    "public.foodtrucks no tiene logo/menu. "
+                                            + "Ejecuta supabase/foodtrucks.sql. "
+                                            + "Se carga el catálogo sin fotos."
+                            );
+                            consultarFoodtrucks(
+                                    CAMPOS_BASE,
+                                    callback,
+                                    false
+                            );
+                            return;
+                        }
+
                         callback.onError(
                                 mensajeError(
                                         parsear(contenido),

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.text.Normalizer;
@@ -16,7 +17,8 @@ import java.util.Locale;
  * así los datos y la lógica de búsqueda existen en un solo lugar.
  *
  * Los datos reales vienen de public.foodtrucks (Supabase). El campo
- * "imagen" es el nombre del drawable local: tacos, burguer, pizza, completos.
+ * "imagen" es el nombre del drawable de respaldo (tacos, burguer, pizza,
+ * completos). "logo" y "menu" apuntan a las fotos reales incluidas en la app.
  *
  * "categoria" puede contener varias categorías separadas por coma
  * (por ejemplo "hamburguesas, completos, churrascos"). La app las
@@ -34,6 +36,8 @@ public class Foodtruck {
     public final boolean abierto;
     public final String imagenNombre;
     public final int imagen;
+    public final String logoNombre;
+    public final List<String> menu;
     public final String direccion;
     public final String horario;
     public final String telefono;
@@ -48,6 +52,8 @@ public class Foodtruck {
                      double lon,
                      boolean abierto,
                      String imagenNombre,
+                     String logoNombre,
+                     List<String> menu,
                      String direccion,
                      String horario,
                      String telefono,
@@ -62,6 +68,10 @@ public class Foodtruck {
         this.abierto = abierto;
         this.imagenNombre = imagenNombre == null ? "tacos" : imagenNombre;
         this.imagen = drawableDe(this.imagenNombre);
+        this.logoNombre = logoNombre == null ? "" : logoNombre.trim();
+        this.menu = menu == null
+                ? new ArrayList<>()
+                : new ArrayList<>(menu);
         this.direccion = direccion == null ? "" : direccion;
         this.horario = horario == null ? "" : horario;
         this.telefono = telefono == null ? "" : telefono;
@@ -87,6 +97,8 @@ public class Foodtruck {
                 fila.optDouble("lon", 0),
                 fila.optBoolean("abierto", true),
                 texto(fila, "imagen"),
+                texto(fila, "logo"),
+                menuDesde(fila),
                 texto(fila, "direccion"),
                 texto(fila, "horario"),
                 texto(fila, "telefono"),
@@ -96,6 +108,47 @@ public class Foodtruck {
 
     private static String texto(JSONObject fila, String columna) {
         return fila.isNull(columna) ? "" : fila.optString(columna, "");
+    }
+
+    /**
+     * PostgREST devuelve text[] como arreglo JSON. También se tolera una
+     * cadena separada por comas por si la fila se cargó a mano.
+     */
+    private static List<String> menuDesde(JSONObject fila) {
+
+        List<String> fotos = new ArrayList<>();
+
+        if (fila == null || fila.isNull("menu")) {
+            return fotos;
+        }
+
+        Object valor = fila.opt("menu");
+
+        if (valor instanceof JSONArray) {
+
+            JSONArray arreglo = (JSONArray) valor;
+
+            for (int i = 0; i < arreglo.length(); i++) {
+                String foto = arreglo.optString(i, "").trim();
+
+                if (!foto.isEmpty()) {
+                    fotos.add(foto);
+                }
+            }
+
+            return fotos;
+        }
+
+        for (String foto : fila.optString("menu", "").split(",")) {
+
+            String limpia = foto.trim();
+
+            if (!limpia.isEmpty()) {
+                fotos.add(limpia);
+            }
+        }
+
+        return fotos;
     }
 
     /** Traduce el nombre guardado en la BD al drawable local. */
@@ -241,6 +294,8 @@ public class Foodtruck {
         intent.putExtra("distancia", distanciaTexto(usuario));
         intent.putExtra("estado", estadoTexto());
         intent.putExtra("imagen", imagen);
+        intent.putExtra("logo", logoNombre);
+        intent.putExtra("menu", menu.toArray(new String[0]));
         intent.putExtra("direccion", direccion);
         intent.putExtra("horario", horario);
         intent.putExtra("telefono", telefono);

@@ -108,7 +108,7 @@ public class FoodtruckAdapter
 
         Foodtruck foodtruck = datos.get(position);
 
-        holder.imagen.setImageResource(foodtruck.imagen);
+        mostrarLogo(holder, foodtruck);
 
         // Nombre único para que la foto viaje de la tarjeta al detalle.
         holder.imagen.setTransitionName("foto_" + clave(foodtruck));
@@ -142,6 +142,34 @@ public class FoodtruckAdapter
                 listener.alHacerClick(foodtruck, holder.imagen);
             }
         });
+    }
+
+    /**
+     * Si el local tiene logo real se muestra completo, sin recortarlo.
+     * Si todavía no tiene fotos, se usa la ilustración de su categoría.
+     */
+    private void mostrarLogo(FoodtruckViewHolder holder, Foodtruck foodtruck) {
+
+        if (foodtruck.logoNombre.isEmpty()) {
+
+            holder.imagen.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            holder.imagen.setPadding(0, 0, 0, 0);
+            holder.imagen.setImageResource(foodtruck.imagen);
+            return;
+        }
+
+        boolean destacado = layoutRes == R.layout.item_foodtruck_destacado;
+        int margen = Math.round(dp(holder.imagen, 8f));
+
+        holder.imagen.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        holder.imagen.setPadding(margen, margen, margen, margen);
+
+        Imagenes.cargar(
+                holder.imagen,
+                foodtruck.logoNombre,
+                destacado ? 180 : 120,
+                destacado ? 110 : 120
+        );
     }
 
     /** Fade + subida leve, con un pequeño retraso por posición. */
@@ -193,6 +221,9 @@ public class FoodtruckAdapter
         holder.itemView.setTranslationY(0f);
         holder.itemView.setScaleX(1f);
         holder.itemView.setScaleY(1f);
+
+        // Descarta una carga pendiente de la posición anterior.
+        holder.imagen.setTag(R.id.tag_imagen, null);
     }
 
     @Override
@@ -259,6 +290,8 @@ public class FoodtruckAdapter
                     && Double.compare(a.rating, b.rating) == 0
                     && a.abierto == b.abierto
                     && a.imagen == b.imagen
+                    && a.logoNombre.equals(b.logoNombre)
+                    && a.menu.equals(b.menu)
                     && a.distanciaTexto(ubicacionVieja)
                     .equals(b.distanciaTexto(ubicacionNueva));
         }

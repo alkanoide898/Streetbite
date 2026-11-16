@@ -1,0 +1,49 @@
+package com.chacho.streetbite;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+/**
+ * Visor de una foto del menú a pantalla completa.
+ * Permite pellizcar para acercar y arrastrar para moverse.
+ */
+public class FotoActivity extends BaseActivity {
+
+    public static Intent crearIntent(
+            android.content.Context contexto,
+            String foto,
+            String nombreLocal) {
+
+        Intent intent = new Intent(contexto, FotoActivity.class);
+        intent.putExtra("foto", foto);
+        intent.putExtra("nombre", nombreLocal);
+        return intent;
+    }
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_foto);
+
+        ImageView imagen = findViewById(R.id.imgFoto);
+        TextView cerrar = findViewById(R.id.btnCerrarFoto);
+
+        String foto = getIntent().getStringExtra("foto");
+        String nombreLocal = getIntent().getStringExtra("nombre");
+
+        if (nombreLocal != null && !nombreLocal.trim().isEmpty()) {
+            imagen.setContentDescription(
+                    "Foto del menú de " + nombreLocal
+            );
+        }
+
+        int ancho = getResources().getDisplayMetrics().widthPixels;
+        int alto = getResources().getDisplayMetrics().heightPixels;
+
+        Imagenes.cargarPx(imagen, foto, ancho, alto);
+
+        cerrar.setOnClickListener(v -> finish());
+    }
+}

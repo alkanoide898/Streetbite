@@ -35,6 +35,13 @@ alter table public.foodtrucks
 alter table public.foodtrucks
     add column if not exists instagram text;
 
+-- Imagenes reales: logo del local y fotos del menu.
+-- Los nombres apuntan a archivos incluidos en res/drawable-nodpi.
+alter table public.foodtrucks
+    add column if not exists logo text;
+alter table public.foodtrucks
+    add column if not exists menu text[] not null default '{}';
+
 -- Un foodtruck por nombre (permite el ON CONFLICT del seed).
 create unique index if not exists foodtrucks_nombre_key
     on public.foodtrucks (nombre);
@@ -121,12 +128,13 @@ where nombre in (
 
 insert into public.foodtrucks
     (nombre, descripcion, categoria, rating, lat, lon, abierto, imagen,
-     direccion, horario, telefono, instagram)
+     logo, menu, direccion, horario, telefono, instagram)
 values
     ('K''milo Móvil',
      'Empanadas que se mueven al ritmo de tu antojo.',
      'empanadas, completos, churrascos', 5.0,
      -36.4291462, -71.9517204, true, 'completos',
+     'logo_kmilo', array['kmilo_1', 'kmilo_2', 'kmilo_3'],
      'Francisco Bilbao 934', '20:00 - 00:00 aprox',
      '+56996873838', null),
 
@@ -134,6 +142,7 @@ values
      'Hamburguesas caseras de calidad.',
      'hamburguesas, completos, churrascos', 5.0,
      -36.4318757, -71.9669775, true, 'burguer',
+     'logo_mechadas', array['mechadas_1', 'mechadas_2'],
      'Sector Alameda (carros)', '12:00 - 00:00',
      '+56962896959', 'las_mechadas_de_mechita'),
 
@@ -141,6 +150,8 @@ values
      '¿Tienes hambre? Aquí encuentras lo que necesitas.',
      'papas fritas, completos, sandwichs', 4.3,
      -36.4320716, -71.9665601, true, 'completos',
+     'logo_bajon', array['bajon_1', 'bajon_2', 'bajon_3',
+                        'bajon_4', 'bajon_5', 'bajon_6'],
      'Puelma 146', '18:00 - 01:00 aprox',
      '+56992493338', 'elbajondeltiopato'),
 
@@ -148,6 +159,8 @@ values
      'Sabor de playa, aunque estés lejos del mar.',
      'hamburguesas, empanadas, papas fritas', 4.4,
      -36.4237640, -71.9597775, true, 'burguer',
+     'logo_playa', array['playa_1', 'playa_2', 'playa_3',
+                        'playa_4', 'playa_5'],
      'Vicuña Mackenna 322', '12:30 - 01:00 aprox',
      '+56949189314', null),
 
@@ -155,6 +168,7 @@ values
      'Burgers caseras con sabor de barrio.',
      'hamburguesas, papas fritas', 4.0,
      -36.4315510, -71.9675142, true, 'burguer',
+     null, array[]::text[],
      'Sector Alameda (carros)', '13:00 - 22:30',
      '+56941612545', 'westburguers_sancarlos'),
 
@@ -162,6 +176,7 @@ values
      'Pizzas napolitanas cocidas a la piedra, selladas al vacío.',
      'pizzas, sandwichs', 4.6,
      -36.4173749, -71.9545543, true, 'pizza',
+     'logo_rocka', array['rocka_1', 'rocka_2', 'rocka_3'],
      'Independencia 1291', '18:00 - 22:30',
      '+56998139170', 'Rockapizzasc'),
 
@@ -169,6 +184,7 @@ values
      'La fiesta empieza con la primera mordida.',
      'hamburguesas, papas fritas', 4.8,
      -36.4246391, -71.9603147, true, 'burguer',
+     'logo_party', array['party_1', 'party_2', 'party_3'],
      'Chacabuco 621', '15:00 - 00:00',
      '+56936772284', 'partyburguer.cl'),
 
@@ -176,6 +192,8 @@ values
      'Sushi y hamburguesas con las mejores promociones.',
      'hamburguesas, sushi, completos', 4.9,
      -36.4170421, -71.9547573, true, 'tacos',
+     'logo_supras', array['supras_1', 'supras_2', 'supras_3',
+                          'supras_4', 'supras_5', 'supras_6'],
      'Independencia 1302', '12:00 - 23:00 aprox',
      '+56928160686', 'supras_gourmet'),
 
@@ -183,6 +201,7 @@ values
      'Dulce y salado, todo en un mismo lugar.',
      'sushi, pizzas, postres', 4.3,
      -36.4300019, -71.9575272, true, 'pizza',
+     'logo_agri', array['agri_1', 'agri_2', 'agri_3', 'agri_4'],
      'Brasil 280', '12:00 - 15:00 / 18:30 - 22:30',
      '+56936434666', 'agri.dulce_sancarlos')
 on conflict (nombre) do update set
@@ -193,6 +212,8 @@ on conflict (nombre) do update set
     lon = excluded.lon,
     abierto = excluded.abierto,
     imagen = excluded.imagen,
+    logo = excluded.logo,
+    menu = excluded.menu,
     direccion = excluded.direccion,
     horario = excluded.horario,
     telefono = excluded.telefono,
@@ -201,5 +222,5 @@ on conflict (nombre) do update set
 
 -- Verificacion rapida
 -- select id, nombre, categoria, rating, lat, lon, abierto, imagen,
---        direccion, horario, telefono, instagram
+--        logo, menu, direccion, horario, telefono, instagram
 -- from public.foodtrucks order by rating desc;

@@ -4,6 +4,11 @@
         <item name="android:windowActivityTransitions">true</item>
         <item name="android:windowContentTransitions">true</item>
     </style>
+
+    <!-- Visor de fotos del menú: fondo negro a pantalla completa -->
+    <style name="Theme.StreetBite.Foto" parent="Theme.StreetBite">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
     <!--  Splash del sistema: mismo fondo que activity_splash.xml para que no se note el salto  -->
     <style name="Theme.StreetBite.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#3E2723</item>

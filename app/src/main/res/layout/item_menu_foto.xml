@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Foto del menú dentro de la grilla del detalle. -->
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="6dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@android:color/white"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="1dp">
+
+    <ImageView
+        android:id="@+id/imgMenuFoto"
+        android:layout_width="match_parent"
+        android:layout_height="190dp"
+        android:background="@color/sb_crema"
+        android:contentDescription="Foto del menú"
+        android:scaleType="centerCrop" />
+
+</androidx.cardview.widget.CardView>

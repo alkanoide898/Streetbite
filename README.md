@@ -21,7 +21,11 @@ respaldo.
 - **Mejor calificados**: fila horizontal con los locales mejor puntuados.
 - **Mapa**: un marcador por local, con encuadre automático para que todos queden
   visibles al abrir.
-- **Detalle del local**: foto, estado, distancia, dirección, horario y accesos
+- **Fotos reales**: cada local muestra su logo en las tarjetas y en la cabecera
+  del detalle, con las fotos de sus platos en la sección **Menú**.
+- **Visor de fotos**: al tocar una foto del menú se abre a pantalla completa con
+  pellizco para acercar, arrastre y doble toque.
+- **Detalle del local**: estado, distancia, dirección, horario y accesos
   directos a WhatsApp e Instagram.
 - **Cuentas**: registro e inicio de sesión con correo/contraseña y con Discord.
 - **Sesión persistente**: al reabrir la app se renueva el token y se entra
@@ -58,9 +62,13 @@ app/src/main/java/com/chacho/streetbite/
 ├── RegistroActivity.java        # creación de cuenta
 ├── HomeActivity.java            # catálogo, búsqueda, filtros y chips
 ├── MapActivity.java             # mapa con los locales
-├── DetalleFoodtruckActivity.java
+├── DetalleFoodtruckActivity.java # logo, datos y grilla del menú
+├── FotoActivity.java            # visor de fotos a pantalla completa
 ├── PerfilActivity.java          # perfil, configuración y logout
-├── FoodtruckAdapter.java        # tarjetas, DiffUtil y animaciones
+├── FoodtruckAdapter.java        # tarjetas, logos, DiffUtil y animaciones
+├── MenuAdapter.java             # grilla de fotos del menú
+├── ZoomImageView.java           # zoom y arrastre en el visor
+├── Imagenes.java                # carga de imágenes con caché y downsampling
 ├── FoodtruckRepositorio.java    # caché, carga remota y respaldo local
 ├── Foodtruck.java               # modelo y conversión desde JSON
 ├── SupabaseHelper.java          # llamadas a Auth y PostgREST
@@ -70,6 +78,7 @@ app/src/main/java/com/chacho/streetbite/
 └── BaseActivity.java            # sonidos, insets y base común
 
 app/src/main/res/layout/         # pantallas e ítems de lista
+app/src/main/res/drawable-nodpi/ # logos y fotos de menú de los locales
 app/src/main/res/raw/            # tap.wav y tarjeta.wav
 supabase/                        # scripts SQL y datos de los locales
 ```
@@ -190,7 +199,9 @@ fila.
 | `rating` | `numeric(2,1)` | Calificación de 0 a 5. |
 | `lat` / `lon` | `double precision` | Coordenadas para el mapa. |
 | `abierto` | `boolean` | Estado actual. |
-| `imagen` | `text` | Drawable local (`tacos`, `burguer`, `pizza`, `completos`). |
+| `imagen` | `text` | Ilustración de respaldo (`tacos`, `burguer`, `pizza`, `completos`). |
+| `logo` | `text` | Logo del local (`logo_kmilo`, `logo_playa`, …). |
+| `menu` | `text[]` | Fotos de los platos (`kmilo_1`, `kmilo_2`, …). |
 | `direccion` | `text` | Dirección del local. |
 | `horario` | `text` | Horario de atención. |
 | `telefono` | `text` | Teléfono / WhatsApp. |
@@ -258,13 +269,38 @@ GET  /rest/v1/foodtrucks?select=...&order=rating.desc,nombre.asc
    la lista vertical, la fila de destacados y los chips.
 6. `MapActivity` usa la misma caché para dibujar los marcadores.
 
-### Detalle y mapa
+### Detalle, menú y mapa
 
-- `DetalleFoodtruckActivity` muestra toda la información del local y abre
-  WhatsApp o Instagram con un toque.
+- `DetalleFoodtruckActivity` muestra el logo del local en la cabecera, la
+  información de contacto y una grilla con las fotos del menú.
+- Al tocar una foto se abre `FotoActivity`: fondo negro, pellizco para acercar,
+  arrastre para moverse y doble toque para volver al tamaño original.
+- Los locales sin fotos todavía muestran su ilustración de categoría y un aviso
+  en la sección Menú.
 - `MapActivity` dibuja un marcador propio por local (cada uno con su
   `Drawable`, para que osmdroid no comparta los límites) y encuadra la cámara
   para mostrar todos los locales.
+
+### Imágenes de los locales
+
+- Las fotos se incluyen dentro de la app, en `res/drawable-nodpi`, y se
+  referencian por nombre desde Supabase (`logo` y `menu`). Así el catálogo se ve
+  igual sin conexión y sin depender de un servicio externo de imágenes.
+- `Imagenes.java` decodifica cada archivo al tamaño que necesita la vista
+  (`inSampleSize`), lo guarda en un `LruCache` y descarta la carga si la vista ya
+  se recicló. No se usa ninguna librería externa.
+- En las tarjetas y en el detalle el logo se muestra completo (`fitCenter`), sin
+  recortar. Las fotos del menú van con recorte uniforme (`centerCrop`).
+- La transición compartida usa el logo: viaja desde la tarjeta hasta la cabecera
+  del detalle con el nombre `foto_<id>`.
+- Para sumar fotos: optimizar el archivo, guardarlo en `res/drawable-nodpi` con
+  el nombre en minúsculas, y agregar ese nombre a `logo` o `menu` del local en
+  Supabase (o en el respaldo local de `FoodtruckRepositorio`).
+- Si la base todavía no tiene las columnas `logo` y `menu`, la app pide el
+  catálogo solo con las columnas base y completa las fotos desde el respaldo
+  local por nombre de local. El catálogo remoto se sigue usando; cuando se
+  aplica la migración, los valores de Supabase tienen prioridad. La app deja un
+  aviso en Logcat (`SupabaseHelper`) para recordar ejecutar el SQL.
 
 ### Sonidos
 
@@ -316,6 +352,9 @@ GET  /rest/v1/foodtrucks?select=...&order=rating.desc,nombre.asc
 - [ ] Probar registro, login, cierre de sesión y reapertura con sesión guardada.
 - [ ] Probar Discord de punta a punta (ida y vuelta a la app).
 - [ ] Revisar los 9 locales en Home, mapa y detalle.
+- [ ] Verificar que cada local muestra su logo y sus fotos de menú.
+- [ ] Abrir una foto del menú, hacer zoom y volver.
+- [ ] Confirmar que West Burguers conserva su ilustración y el aviso de menú vacío.
 - [ ] Probar búsqueda, categorías y “solo abiertos”.
 - [ ] Probar WhatsApp e Instagram desde el detalle.
 - [ ] Verificar sonidos y su interruptor en Perfil.
@@ -351,6 +390,13 @@ de Supabase (`streetbite://login-callback`).
 Suele ser por **Confirm email** activado. Desactivarlo o confirmar el correo
 antes de iniciar sesión.
 
+### Las fotos no aparecen en la app
+
+Falta aplicar la migración de `supabase/foodtrucks.sql` (columnas `logo` y
+`menu`) o los nombres de archivo no coinciden con los guardados en la base.
+Revisar Logcat con el filtro `SupabaseHelper`. La app funciona igual: usa el
+catálogo sin fotos y completa las que ya vienen incluidas por nombre de local.
+
 ### El SQL Editor “ignora” RLS
 
 El SQL Editor de Supabase ejecuta como administrador y se salta RLS. Para
@@ -369,7 +415,6 @@ perfiles de otros usuarios.
 
 ## Próximos pasos
 
-- Fotos reales por local en lugar de ilustraciones.
 - Panel para que cada dueño edite su foodtruck sin pasar por el SQL Editor.
 - Notificaciones cuando un local favorito abre o cambia de horario.
 - Favoritos y reseñas de usuarios.
@@ -378,6 +423,21 @@ perfiles de otros usuarios.
 ---
 
 ## Historial de cambios
+
+### 2026-11-16 — Fotos reales y menú de cada local
+
+- Se incorporaron 40 imágenes optimizadas (8 logos y 32 fotos de platos) en
+  `res/drawable-nodpi`.
+- Nuevas columnas `logo` y `menu text[]` en `public.foodtrucks`, con el seed de
+  los 9 locales actualizado.
+- Las tarjetas y la cabecera del detalle muestran el logo del local sin
+  recortarlo; la transición compartida ahora viaja con el logo.
+- Nueva sección **Menú** en el detalle, con grilla de dos columnas y estado
+  vacío para los locales sin fotos.
+- Nuevo visor a pantalla completa con zoom por pellizco, arrastre y doble toque.
+- `Imagenes.java` carga, redimensiona y cachea las fotos sin librerías externas.
+- West Burguers todavía no tiene material propio y conserva la ilustración de
+  respaldo.
 
 ### 2026-11-12 — Animaciones de interfaz
 

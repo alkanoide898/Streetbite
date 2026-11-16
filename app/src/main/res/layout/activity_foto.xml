@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <com.chacho.streetbite.ZoomImageView
+        android:id="@+id/imgFoto"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="Foto del menú"
+        android:scaleType="matrix" />
+
+    <TextView
+        android:id="@+id/btnCerrarFoto"
+        android:layout_width="46dp"
+        android:layout_height="46dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="14dp"
+        android:background="@drawable/bg_cerrar_foto"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:text="✕"
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="28dp"
+        android:text="Pellizca para acercar"
+        android:textColor="#B3FFFFFF"
+        android:textSize="12sp" />
+
+</FrameLayout>

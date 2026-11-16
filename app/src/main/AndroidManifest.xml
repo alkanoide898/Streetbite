@@ -58,6 +58,12 @@
             android:name=".DetalleFoodtruckActivity"
             android:exported="false" />
 
+        <!-- VISOR DE FOTOS DEL MENÚ -->
+        <activity
+            android:name=".FotoActivity"
+            android:exported="false"
+            android:theme="@style/Theme.StreetBite.Foto" />
+
         <!-- REGISTRO -->
         <activity
             android:name=".RegistroActivity"

@@ -1,6 +1,7 @@
 package com.chacho.streetbite;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -54,7 +55,9 @@ public final class FoodtruckRepositorio {
                     @Override
                     public void onSuccess(List<Foodtruck> foodtrucks) {
                         cache = Collections.unmodifiableList(
-                                new ArrayList<>(foodtrucks)
+                                new ArrayList<>(
+                                        completarFotos(foodtrucks)
+                                )
                         );
                         terminar(true);
                     }
@@ -122,7 +125,9 @@ public final class FoodtruckRepositorio {
                 "Empanadas que se mueven al ritmo de tu antojo.",
                 "empanadas, completos, churrascos", 5.0,
                 -36.4291462, -71.9517204, true,
-                "completos", "Francisco Bilbao 934", "20:00 - 00:00 aprox",
+                "completos", "logo_kmilo",
+                fotos("kmilo_1", "kmilo_2", "kmilo_3"),
+                "Francisco Bilbao 934", "20:00 - 00:00 aprox",
                 "+56996873838", ""
         ));
 
@@ -131,7 +136,9 @@ public final class FoodtruckRepositorio {
                 "Hamburguesas caseras de calidad.",
                 "hamburguesas, completos, churrascos", 5.0,
                 -36.4318757, -71.9669775, true,
-                "burguer", "Sector Alameda (carros)", "12:00 - 00:00",
+                "burguer", "logo_mechadas",
+                fotos("mechadas_1", "mechadas_2"),
+                "Sector Alameda (carros)", "12:00 - 00:00",
                 "+56962896959", "las_mechadas_de_mechita"
         ));
 
@@ -140,7 +147,10 @@ public final class FoodtruckRepositorio {
                 "¿Tienes hambre? Aquí encuentras lo que necesitas.",
                 "papas fritas, completos, sandwichs", 4.3,
                 -36.4320716, -71.9665601, true,
-                "completos", "Puelma 146", "18:00 - 01:00 aprox",
+                "completos", "logo_bajon",
+                fotos("bajon_1", "bajon_2", "bajon_3",
+                        "bajon_4", "bajon_5", "bajon_6"),
+                "Puelma 146", "18:00 - 01:00 aprox",
                 "+56992493338", "elbajondeltiopato"
         ));
 
@@ -149,7 +159,10 @@ public final class FoodtruckRepositorio {
                 "Sabor de playa, aunque estés lejos del mar.",
                 "hamburguesas, empanadas, papas fritas", 4.4,
                 -36.4237640, -71.9597775, true,
-                "burguer", "Vicuña Mackenna 322", "12:30 - 01:00 aprox",
+                "burguer", "logo_playa",
+                fotos("playa_1", "playa_2", "playa_3",
+                        "playa_4", "playa_5"),
+                "Vicuña Mackenna 322", "12:30 - 01:00 aprox",
                 "+56949189314", ""
         ));
 
@@ -158,7 +171,9 @@ public final class FoodtruckRepositorio {
                 "Burgers caseras con sabor de barrio.",
                 "hamburguesas, papas fritas", 4.0,
                 -36.4315510, -71.9675142, true,
-                "burguer", "Sector Alameda (carros)", "13:00 - 22:30",
+                "burguer", "",
+                fotos(),
+                "Sector Alameda (carros)", "13:00 - 22:30",
                 "+56941612545", "westburguers_sancarlos"
         ));
 
@@ -167,7 +182,9 @@ public final class FoodtruckRepositorio {
                 "Pizzas napolitanas cocidas a la piedra, selladas al vacío.",
                 "pizzas, sandwichs", 4.6,
                 -36.4173749, -71.9545543, true,
-                "pizza", "Independencia 1291", "18:00 - 22:30",
+                "pizza", "logo_rocka",
+                fotos("rocka_1", "rocka_2", "rocka_3"),
+                "Independencia 1291", "18:00 - 22:30",
                 "+56998139170", "Rockapizzasc"
         ));
 
@@ -176,7 +193,9 @@ public final class FoodtruckRepositorio {
                 "La fiesta empieza con la primera mordida.",
                 "hamburguesas, papas fritas", 4.8,
                 -36.4246391, -71.9603147, true,
-                "burguer", "Chacabuco 621", "15:00 - 00:00",
+                "burguer", "logo_party",
+                fotos("party_1", "party_2", "party_3"),
+                "Chacabuco 621", "15:00 - 00:00",
                 "+56936772284", "partyburguer.cl"
         ));
 
@@ -185,7 +204,10 @@ public final class FoodtruckRepositorio {
                 "Sushi y hamburguesas con las mejores promociones.",
                 "hamburguesas, sushi, completos", 4.9,
                 -36.4170421, -71.9547573, true,
-                "tacos", "Independencia 1302", "12:00 - 23:00 aprox",
+                "tacos", "logo_supras",
+                fotos("supras_1", "supras_2", "supras_3",
+                        "supras_4", "supras_5", "supras_6"),
+                "Independencia 1302", "12:00 - 23:00 aprox",
                 "+56928160686", "supras_gourmet"
         ));
 
@@ -194,10 +216,83 @@ public final class FoodtruckRepositorio {
                 "Dulce y salado, todo en un mismo lugar.",
                 "sushi, pizzas, postres", 4.3,
                 -36.4300019, -71.9575272, true,
-                "pizza", "Brasil 280", "12:00 - 15:00 / 18:30 - 22:30",
+                "pizza", "logo_agri",
+                fotos("agri_1", "agri_2", "agri_3", "agri_4"),
+                "Brasil 280", "12:00 - 15:00 / 18:30 - 22:30",
                 "+56936434666", "agri.dulce_sancarlos"
         ));
 
         return Collections.unmodifiableList(lista);
+    }
+
+    /** Lista corta de fotos del menú para el respaldo local. */
+    private static List<String> fotos(String... nombres) {
+        return new ArrayList<>(Arrays.asList(nombres));
+    }
+
+    /**
+     * Si la base todavía no tiene las columnas logo/menu, todas las filas
+     * llegan sin fotos. En ese caso se completan desde el respaldo local por
+     * nombre, para que los locales ya conocidos muestren sus fotos mientras se
+     * aplica la migración. Cuando Supabase tenga esas columnas, sus valores
+     * mandan.
+     */
+    private static List<Foodtruck> completarFotos(List<Foodtruck> remotos) {
+
+        boolean sinColumnas = true;
+
+        for (Foodtruck foodtruck : remotos) {
+            if (!foodtruck.logoNombre.isEmpty() || !foodtruck.menu.isEmpty()) {
+                sinColumnas = false;
+                break;
+            }
+        }
+
+        if (!sinColumnas) {
+            return remotos;
+        }
+
+        List<Foodtruck> lista = new ArrayList<>(remotos.size());
+
+        for (Foodtruck remoto : remotos) {
+
+            Foodtruck local = buscarEn(MOCK, remoto.nombre);
+
+            if (local == null) {
+                lista.add(remoto);
+                continue;
+            }
+
+            lista.add(new Foodtruck(
+                    remoto.id,
+                    remoto.nombre,
+                    remoto.descripcion,
+                    remoto.categoria,
+                    remoto.rating,
+                    remoto.lat,
+                    remoto.lon,
+                    remoto.abierto,
+                    remoto.imagenNombre,
+                    local.logoNombre,
+                    local.menu,
+                    remoto.direccion,
+                    remoto.horario,
+                    remoto.telefono,
+                    remoto.instagram
+            ));
+        }
+
+        return lista;
+    }
+
+    private static Foodtruck buscarEn(List<Foodtruck> lista, String nombre) {
+
+        for (Foodtruck foodtruck : lista) {
+            if (foodtruck.nombre.equals(nombre)) {
+                return foodtruck;
+            }
+        }
+
+        return null;
     }
 }

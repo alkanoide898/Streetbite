@@ -8,6 +8,12 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class DetalleFoodtruckActivity extends BaseActivity {
 
@@ -28,6 +34,9 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         TextView txtTelefonoDetalle = findViewById(R.id.txtTelefonoDetalle);
         TextView txtInstagramDetalle = findViewById(R.id.txtInstagramDetalle);
         TextView btnVolverDetalle = findViewById(R.id.btnVolverDetalle);
+        TextView txtMenuSubtitulo = findViewById(R.id.txtMenuSubtitulo);
+        TextView txtMenuVacio = findViewById(R.id.txtMenuVacio);
+        RecyclerView recyclerMenu = findViewById(R.id.recyclerMenu);
 
         // La foto viene desde la tarjeta con una transición compartida.
         String transicionFoto = getIntent().getStringExtra("transicion_foto");
@@ -46,6 +55,8 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         String horario = getIntent().getStringExtra("horario");
         String telefono = getIntent().getStringExtra("telefono");
         String instagram = getIntent().getStringExtra("instagram");
+        String logo = getIntent().getStringExtra("logo");
+        String[] menu = getIntent().getStringArrayExtra("menu");
         int imagen = getIntent().getIntExtra("imagen", R.drawable.tacos);
 
         // Asignar datos
@@ -71,7 +82,8 @@ public class DetalleFoodtruckActivity extends BaseActivity {
             }
         }
 
-        imgDetalle.setImageResource(imagen);
+        mostrarLogo(imgDetalle, logo, imagen);
+        configurarMenu(recyclerMenu, txtMenuSubtitulo, txtMenuVacio, menu, nombre);
 
         if (direccion != null && !direccion.trim().isEmpty()) {
             txtDireccionDetalle.setText("📍 " + direccion);
@@ -120,6 +132,67 @@ public class DetalleFoodtruckActivity extends BaseActivity {
 
         // Volver
         btnVolverDetalle.setOnClickListener(v -> finish());
+    }
+
+    /**
+     * El logo se carga de forma inmediata para que la transición compartida
+     * desde la tarjeta no muestre la ilustración de respaldo.
+     */
+    private void mostrarLogo(ImageView vista, String logo, int respaldo) {
+
+        if (logo != null && !logo.trim().isEmpty()) {
+            vista.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            Imagenes.cargarAhora(vista, logo, 200, 200);
+            return;
+        }
+
+        vista.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        vista.setPadding(0, 0, 0, 0);
+        vista.setImageResource(respaldo);
+    }
+
+    private void configurarMenu(RecyclerView recycler,
+                                TextView subtitulo,
+                                TextView vacio,
+                                String[] menu,
+                                String nombreLocal) {
+
+        List<String> fotos = new ArrayList<>();
+
+        if (menu != null) {
+            for (String foto : menu) {
+                if (foto != null && !foto.trim().isEmpty()) {
+                    fotos.add(foto.trim());
+                }
+            }
+        }
+
+        if (fotos.isEmpty()) {
+            recycler.setVisibility(View.GONE);
+            subtitulo.setVisibility(View.GONE);
+            vacio.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        subtitulo.setText(
+                fotos.size() == 1
+                        ? "1 foto de los platos"
+                        : fotos.size() + " fotos de los platos"
+        );
+
+        recycler.setLayoutManager(new GridLayoutManager(this, 2));
+        recycler.setAdapter(
+                new MenuAdapter(
+                        fotos,
+                        foto -> startActivity(
+                                FotoActivity.crearIntent(
+                                        this,
+                                        foto,
+                                        nombreLocal
+                                )
+                        )
+                )
+        );
     }
 
     private void abrirUrl(String url) {
