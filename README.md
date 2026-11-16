@@ -423,6 +423,12 @@ perfiles de otros usuarios.
 
 ## Historial de cambios
 
+### 2026-11-16 — Estados de apertura variados
+
+- West Burguers y Rocka Pizza quedan como cerrados para que la app muestre
+  ambos estados y el filtro "solo abiertos" tenga efecto real.
+- El seed de `supabase/foodtrucks.sql` y el respaldo local quedan sincronizados.
+
 ### 2026-11-16 — Fotos reales y menú de cada local
 
 - Se incorporaron 40 imágenes optimizadas (8 logos y 32 fotos de platos) en
