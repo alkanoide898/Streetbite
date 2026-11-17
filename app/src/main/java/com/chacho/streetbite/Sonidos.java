@@ -8,9 +8,12 @@ import android.media.SoundPool;
 /**
  * Efectos de sonido de la interfaz.
  *
- * Usa SoundPool (no MediaPlayer) porque los sonidos son muy cortos y se
- * repiten todo el tiempo: se cargan una sola vez en memoria y se pueden
- * solapar sin cortarse entre sí.
+ * Usa SoundPool porque los sonidos son muy cortos y se repiten todo el
+ * tiempo: se cargan una sola vez en memoria y se pueden solapar sin cortarse.
+ *
+ * SoundPool.load() es asíncrono, así que se espera a que termine antes de
+ * reproducir. Sin esa espera, el primer toque después de abrir la app se
+ * quedaba sin sonido y se sentía como un retardo.
  */
 public final class Sonidos {
 
@@ -23,12 +26,15 @@ public final class Sonidos {
     private static final String PREFS = "StreetBiteSonidos";
     private static final String CLAVE_ACTIVO = "activos";
 
-    // Volumen discreto: son un detalle, no deben tapar la música del usuario.
-    private static final float VOLUMEN = 0.55f;
+    // Los archivos ya son suaves: este volumen los deja como un detalle.
+    private static final float VOLUMEN = 0.7f;
 
     private static SoundPool pool;
     private static int idTap;
     private static int idTarjeta;
+
+    private static volatile boolean tapListo;
+    private static volatile boolean tarjetaLista;
 
     private Sonidos() {
         // Evita crear instancias de esta clase.
@@ -51,16 +57,32 @@ public final class Sonidos {
                 .build();
 
         pool = new SoundPool.Builder()
-                .setMaxStreams(4)
+                // Bastantes streams para que toques seguidos no se corten.
+                .setMaxStreams(8)
                 .setAudioAttributes(atributos)
                 .build();
+
+        pool.setOnLoadCompleteListener((soundPool, id, estado) -> {
+            if (estado != 0) {
+                return;
+            }
+
+            if (id == idTap) {
+                tapListo = true;
+            }
+
+            if (id == idTarjeta) {
+                tarjetaLista = true;
+            }
+        });
 
         idTap = pool.load(app, R.raw.tap, 1);
         idTarjeta = pool.load(app, R.raw.tarjeta, 1);
     }
 
     /**
-     * Reproduce un efecto. Si el usuario los desactivó, no hace nada.
+     * Reproduce un efecto. Si el usuario los desactivó o el archivo todavía
+     * no terminó de cargar, no hace nada.
      *
      * @param sonido {@link #TAP} o {@link #TARJETA}
      */
@@ -71,8 +93,12 @@ public final class Sonidos {
 
         iniciar(contexto);
 
-        // Si SoundPool todavía no terminó de cargar, play() no suena y
-        // devuelve 0: no pasa nada, el siguiente toque ya se escucha.
+        boolean listo = sonido == TARJETA ? tarjetaLista : tapListo;
+
+        if (!listo) {
+            return;
+        }
+
         int id = sonido == TARJETA ? idTarjeta : idTap;
 
         if (id != 0) {

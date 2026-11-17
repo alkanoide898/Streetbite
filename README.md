@@ -359,6 +359,11 @@ sesión abierta para que se pueda reintentar.
   `dispatchTouchEvent`: los botones, chips y tarjetas ya existentes suenan sin
   envolver cada listener.
 - Botones, chips y navegación usan `tap.wav`; las tarjetas usan `tarjeta.wav`.
+  Ambos son tonos suaves de 78 y 88 ms, con ataque de 4 ms y fundido a cero en
+  la cola: no tienen clics de inicio ni cortes bruscos al terminar.
+- `SoundPool` espera a que terminen de cargar antes de reproducirlos, así el
+  primer toque tras abrir la app no se queda sin sonido. Tiene 8 streams para
+  que varios toques seguidos no se corten por falta de canales.
 - Al hacer scroll no suenan.
 - Se desactivan en **Perfil → Configuración** y el estado queda guardado en
   `SharedPreferences` (`StreetBiteSonidos`).
@@ -494,6 +499,14 @@ perfiles de otros usuarios.
 ---
 
 ## Historial de cambios
+
+### 2026-11-17 — Sonidos más suaves y sin cortes
+
+- Se reemplazaron `tap.wav` y `tarjeta.wav` por tonos más cortos (78 y 88 ms),
+  con ataque gradual y cola que termina en cero. Antes duraban 140 y 117 ms
+  con un pico de −5 dB, se solapaban y sonaban bruscos.
+- `Sonidos.java` ahora espera la carga de `SoundPool` antes de reproducir y
+  usa 8 streams, así no se pierde el primer toque ni se cortan los seguidos.
 
 ### 2026-11-17 — Video del recorrido dentro de la app
 
