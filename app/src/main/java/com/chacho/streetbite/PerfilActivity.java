@@ -34,9 +34,7 @@ public class PerfilActivity extends BaseActivity {
 
         LinearLayout btnMiPerfil = findViewById(R.id.btnMiPerfil);
         LinearLayout btnFavoritos = findViewById(R.id.btnFavoritos);
-        LinearLayout btnNotificaciones = findViewById(R.id.btnNotificaciones);
         LinearLayout btnConfiguracion = findViewById(R.id.btnConfiguracion);
-        LinearLayout btnAyuda = findViewById(R.id.btnAyuda);
         LinearLayout btnCerrarSesion = findViewById(R.id.btnCerrarSesion);
 
         btnMiPerfil.setOnClickListener(v -> sincronizarYEditarPerfil());
@@ -48,15 +46,7 @@ public class PerfilActivity extends BaseActivity {
                 Toast.makeText(this, "Mis favoritos", Toast.LENGTH_SHORT).show()
         );
 
-        btnNotificaciones.setOnClickListener(v ->
-                Toast.makeText(this, "Notificaciones", Toast.LENGTH_SHORT).show()
-        );
-
         btnConfiguracion.setOnClickListener(v -> mostrarConfiguracion());
-
-        btnAyuda.setOnClickListener(v ->
-                Toast.makeText(this, "Ayuda y soporte", Toast.LENGTH_SHORT).show()
-        );
 
         btnCerrarSesion.setOnClickListener(v -> confirmarCierre());
 

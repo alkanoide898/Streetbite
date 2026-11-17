@@ -482,6 +482,13 @@ perfiles de otros usuarios.
 
 ## Historial de cambios
 
+### 2026-11-17 — Perfil más simple
+
+- Se quitaron **Notificaciones** y **Ayuda y soporte** de la pantalla de
+  perfil: no se usaban y solo mostraban un aviso sin función real.
+- El perfil queda con Mi información, Mis favoritos, Configuración, Eliminar
+  cuenta y Cerrar sesión.
+
 ### 2026-11-17 — Pantalla propia para Mi información
 
 - Perfil > Mi información ya no abre un diálogo: abre `MiInformacionActivity`,
