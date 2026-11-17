@@ -41,7 +41,7 @@ public class PerfilActivity extends BaseActivity {
         LinearLayout btnAyuda = findViewById(R.id.btnAyuda);
         LinearLayout btnCerrarSesion = findViewById(R.id.btnCerrarSesion);
 
-        btnMiPerfil.setOnClickListener(v -> editarPerfil());
+        btnMiPerfil.setOnClickListener(v -> sincronizarYEditarPerfil());
 
         LinearLayout btnEliminarCuenta = findViewById(R.id.btnEliminarCuenta);
         btnEliminarCuenta.setOnClickListener(v -> confirmarEliminarCuenta());
@@ -211,6 +211,90 @@ public class PerfilActivity extends BaseActivity {
                 .show();
     }
 
+    private void sincronizarYEditarPerfil() {
+        String accessToken = Sesion.accessToken(this);
+
+        if (accessToken.isEmpty()) {
+            Toast.makeText(this,
+                    "No hay sesión activa. Inicia sesión de nuevo.",
+                    Toast.LENGTH_LONG).show();
+            volverAlLogin();
+            return;
+        }
+
+        // Pedir el id de usuario a Supabase Auth para tener siempre el
+        // identificador correcto (el que coincide con auth.users).
+        SupabaseHelper.obtenerUsuario(
+                accessToken,
+                new SupabaseHelper.AuthCallback() {
+                    @Override
+                    public void onSuccess(JSONObject usuario) {
+                        Sesion.guardarUsuario(
+                                PerfilActivity.this, usuario
+                        );
+                        String usuarioId = Sesion.usuarioId(
+                                PerfilActivity.this
+                        );
+
+                        if (usuarioId.isEmpty()) {
+                            runOnUiThread(() -> Toast.makeText(
+                                    PerfilActivity.this,
+                                    "No se pudo obtener el id de usuario.",
+                                    Toast.LENGTH_LONG
+                            ).show());
+                            return;
+                        }
+
+                        // Crear o actualizar el perfil en la nube.
+                        // Si la fila no existe, on_conflict la crea;
+                        // si existe, la actualiza.
+                        SupabaseHelper.guardarOActualizarPerfil(
+                                accessToken,
+                                usuarioId,
+                                Sesion.nombre(PerfilActivity.this),
+                                Sesion.correo(PerfilActivity.this),
+                                new SupabaseHelper.AuthCallback() {
+                                    @Override
+                                    public void onSuccess(
+                                            JSONObject respuesta
+                                    ) {
+                                        Sesion.guardarPerfil(
+                                                PerfilActivity.this,
+                                                respuesta
+                                        );
+                                        runOnUiThread(
+                                                PerfilActivity.this::
+                                                        editarPerfil
+                                        );
+                                    }
+
+                                    @Override
+                                    public void onError(String mensaje) {
+                                        runOnUiThread(() -> Toast.makeText(
+                                                PerfilActivity.this,
+                                                "No se pudo sincronizar con "
+                                                        + "la nube: "
+                                                        + mensaje,
+                                                Toast.LENGTH_LONG
+                                        ).show());
+                                        editarPerfil();
+                                    }
+                                }
+                        );
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        runOnUiThread(() -> Toast.makeText(
+                                PerfilActivity.this,
+                                "No se pudo obtener el usuario: " + mensaje,
+                                Toast.LENGTH_LONG
+                        ).show());
+                    }
+                }
+        );
+    }
+
     private void editarPerfil() {
         String nombreActual = Sesion.nombre(this);
         String correoActual = Sesion.correo(this);
@@ -258,7 +342,7 @@ public class PerfilActivity extends BaseActivity {
                         return;
                     }
 
-                    SupabaseHelper.actualizarPerfil(
+                    SupabaseHelper.guardarOActualizarPerfil(
                             accessToken,
                             usuarioId,
                             nombre,
@@ -271,14 +355,14 @@ public class PerfilActivity extends BaseActivity {
                                     runOnUiThread(() -> mostrarDatos(
                                             nombre, correo));
                                     Toast.makeText(PerfilActivity.this,
-                                            "Perfil actualizado.",
+                                            "Perfil guardado en la nube.",
                                             Toast.LENGTH_SHORT).show();
                                 }
 
                                 @Override
                                 public void onError(String mensaje) {
                                     Toast.makeText(PerfilActivity.this,
-                                            "No se pudo actualizar: " + mensaje,
+                                            "No se pudo guardar: " + mensaje,
                                             Toast.LENGTH_LONG).show();
                                 }
                             });

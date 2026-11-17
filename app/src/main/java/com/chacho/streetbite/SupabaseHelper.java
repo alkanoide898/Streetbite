@@ -280,10 +280,117 @@ public final class SupabaseHelper {
     }
 
     /**
-     * Actualiza el nombre y el correo del perfil propio.
-     * RLS solo permite editar la fila del usuario autenticado.
+     * Crea o actualiza el perfil propio (upsert manual).
+     * Primero consulta si ya existe una fila para este usuario; si existe,
+     * la actualiza con PATCH; si no, la crea con POST.
+     * RLS solo permite operar la fila del usuario autenticado.
      */
-    public static void actualizarPerfil(
+    public static void guardarOActualizarPerfil(
+            String accessToken,
+            String usuarioId,
+            String nombre,
+            String correo,
+            AuthCallback callback) {
+
+        // 1. Verificar si ya existe el perfil para este usuario.
+        String url = SupabaseConfig.SUPABASE_URL
+                + TABLA_USUARIOS
+                + "?usuario_id=eq." + usuarioId
+                + "&select=usuario_id";
+
+        Request solicitud = new Request.Builder()
+                .url(url)
+                .get()
+                .addHeader("apikey",
+                        SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .build();
+
+        CLIENT.newCall(solicitud).enqueue(new Callback() {
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e(TAG, "Error al consultar perfil", e);
+                callback.onSinConexion(
+                        "No se pudo conectar con Supabase. "
+                                + "Revisa tu conexión."
+                );
+            }
+
+            @Override
+            public void onResponse(Call call, Response response)
+                    throws IOException {
+
+                try (Response respuesta = response) {
+                    String contenido = respuesta.body() != null
+                            ? respuesta.body().string()
+                            : "";
+
+                    if (!respuesta.isSuccessful()) {
+                        callback.onError(
+                                mensajeError(parsear(contenido),
+                                        respuesta.code())
+                        );
+                        return;
+                    }
+
+                    boolean existe;
+                    try {
+                        JSONArray arreglo = new JSONArray(contenido);
+                        existe = arreglo.length() > 0;
+                    } catch (Exception e) {
+                        existe = false;
+                    }
+
+                    if (existe) {
+                        // 2a. Ya existe → actualizar con PATCH.
+                        actualizarPerfilExistente(
+                                accessToken, usuarioId, nombre, correo,
+                                callback
+                        );
+                    } else {
+                        // 2b. No existe → crear con POST.
+                        crearPerfilNuevo(
+                                accessToken, usuarioId, nombre, correo,
+                                callback
+                        );
+                    }
+                }
+            }
+        });
+    }
+
+    private static void crearPerfilNuevo(
+            String accessToken,
+            String usuarioId,
+            String nombre,
+            String correo,
+            AuthCallback callback) {
+
+        try {
+            JSONObject perfil = new JSONObject();
+            perfil.put("usuario_id", usuarioId);
+            perfil.put("nombre", nombre);
+            perfil.put("correo", correo);
+
+            Request solicitud = new Request.Builder()
+                    .url(SupabaseConfig.SUPABASE_URL + TABLA_USUARIOS)
+                    .post(RequestBody.create(perfil.toString(), JSON))
+                    .addHeader("apikey",
+                            SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("Prefer", "return=representation")
+                    .build();
+
+            ejecutar(solicitud, callback);
+
+        } catch (Exception e) {
+            callback.onError("No se pudo preparar el perfil.");
+        }
+    }
+
+    private static void actualizarPerfilExistente(
             String accessToken,
             String usuarioId,
             String nombre,
@@ -574,6 +681,12 @@ public final class SupabaseHelper {
                     if (respuesta.isSuccessful()) {
                         callback.onSuccess(resultado);
                     } else {
+                        Log.w(
+                                TAG,
+                                "HTTP " + respuesta.code()
+                                        + " URL=" + solicitud.url()
+                                        + " body=" + contenido
+                        );
                         callback.onError(
                                 mensajeError(resultado, respuesta.code())
                         );
