@@ -3,6 +3,7 @@ package com.chacho.streetbite;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputType;
+import android.util.Patterns;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -131,11 +132,8 @@ public class PerfilActivity extends BaseActivity {
                         }
 
                         Sesion.guardarPerfil(PerfilActivity.this, perfil);
-
-                        runOnUiThread(() -> mostrarDatos(
-                                perfil.optString("nombre", ""),
-                                perfil.optString("correo", "")
-                        ));
+                        sincronizarCorreoConAuth(
+                                accessToken, usuarioId, perfil);
                     }
 
                     @Override
@@ -181,6 +179,75 @@ public class PerfilActivity extends BaseActivity {
                     }
                 }
         );
+    }
+
+    /**
+     * Si el usuario confirmó un cambio de correo en Auth, replica el correo
+     * nuevo en public.usuarios y en la pantalla. Mientras el cambio siga
+     * pendiente (new_email), se mantiene el correo actual.
+     */
+    private void sincronizarCorreoConAuth(
+            String accessToken,
+            String usuarioId,
+            JSONObject perfil) {
+
+        String nombre = perfil.optString("nombre", "");
+        String correoPerfil = perfil.optString("correo", "");
+
+        SupabaseHelper.obtenerUsuario(
+                accessToken,
+                new SupabaseHelper.AuthCallback() {
+                    @Override
+                    public void onSuccess(JSONObject usuario) {
+                        String correoAuth = usuario.optString("email", "");
+                        String pendiente = usuario.optString("new_email", "");
+
+                        if (!pendiente.isEmpty()
+                                || correoAuth.isEmpty()
+                                || correoAuth.equalsIgnoreCase(correoPerfil)) {
+                            runOnUiThread(() -> mostrarDatos(
+                                    nombre, correoPerfil));
+                            return;
+                        }
+
+                        SupabaseHelper.guardarOActualizarPerfil(
+                                accessToken,
+                                usuarioId,
+                                nombre,
+                                correoAuth,
+                                new SupabaseHelper.AuthCallback() {
+                                    @Override
+                                    public void onSuccess(
+                                            JSONObject respuesta) {
+                                        if (respuesta.length() > 0) {
+                                            Sesion.guardarPerfil(
+                                                    PerfilActivity.this,
+                                                    respuesta);
+                                        }
+
+                                        Sesion.actualizarDatosPerfil(
+                                                PerfilActivity.this,
+                                                nombre,
+                                                correoAuth);
+
+                                        runOnUiThread(() -> mostrarDatos(
+                                                nombre, correoAuth));
+                                    }
+
+                                    @Override
+                                    public void onError(String mensaje) {
+                                        runOnUiThread(() -> mostrarDatos(
+                                                nombre, correoPerfil));
+                                    }
+                                });
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        runOnUiThread(() -> mostrarDatos(
+                                nombre, correoPerfil));
+                    }
+                });
     }
 
     private void mostrarConfiguracion() {
@@ -372,13 +439,11 @@ public class PerfilActivity extends BaseActivity {
         inputCorreo.setHint("Correo electrónico");
         inputCorreo.setText(correoActual);
         inputCorreo.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-        inputCorreo.setEnabled(false);
-        inputCorreo.setFocusable(false);
         contenedor.addView(inputCorreo);
 
         TextView nota = new TextView(this);
         nota.setText(
-                "El correo de inicio de sesión no se cambia desde aquí.");
+                "Este correo también será tu correo de inicio de sesión.");
         nota.setTextSize(12f);
         nota.setAlpha(0.7f);
         nota.setPadding(0, Math.round(-4f * densidad), 0, 0);
@@ -390,11 +455,20 @@ public class PerfilActivity extends BaseActivity {
                 .setNegativeButton("Cancelar", null)
                 .setPositiveButton("Guardar", (dialogo, cual) -> {
                     String nombre = inputNombre.getText().toString().trim();
+                    String correo = inputCorreo.getText().toString().trim()
+                            .toLowerCase(Locale.ROOT);
 
-                    if (nombre.isEmpty() || correoActual.isEmpty()) {
+                    if (nombre.isEmpty()) {
                         Toast.makeText(this,
                                 "Escribe tu nombre.", Toast.LENGTH_SHORT)
                                 .show();
+                        return;
+                    }
+
+                    if (!Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
+                        Toast.makeText(this,
+                                "Escribe un correo válido.",
+                                Toast.LENGTH_SHORT).show();
                         return;
                     }
 
@@ -406,68 +480,145 @@ public class PerfilActivity extends BaseActivity {
                         return;
                     }
 
-                    SupabaseHelper.guardarOActualizarPerfil(
+                    if (correo.equalsIgnoreCase(correoActual)) {
+                        guardarPerfilEnNube(
+                                accessToken, usuarioId, nombre, correo);
+                        return;
+                    }
+
+                    // El correo es la identidad de la cuenta: se cambia
+                    // primero en Auth y, si Supabase lo acepta, se actualiza
+                    // el perfil público.
+                    SupabaseHelper.cambiarCorreoAuth(
                             accessToken,
-                            usuarioId,
-                            nombre,
-                            correoActual,
+                            correo,
                             new SupabaseHelper.AuthCallback() {
                                 @Override
-                                public void onSuccess(JSONObject respuesta) {
-                                    // El nombre también se guarda en Auth
-                                    // para conservarlo al volver a entrar.
-                                    SupabaseHelper.actualizarNombreAuth(
-                                            accessToken,
-                                            nombre,
-                                            new SupabaseHelper.AuthCallback() {
-                                                @Override
-                                                public void onSuccess(
-                                                        JSONObject usuario) {
-                                                    Sesion.guardarUsuario(
-                                                            PerfilActivity.this,
-                                                            usuario);
-                                                }
+                                public void onSuccess(JSONObject usuario) {
+                                    String correoAplicado =
+                                            usuario.optString("email", "");
+                                    String correoPendiente =
+                                            usuario.optString("new_email", "");
 
-                                                @Override
-                                                public void onError(
-                                                        String mensaje) {
-                                                    // El perfil ya se guardó;
-                                                    // el nombre se reintenta
-                                                    // en el próximo inicio.
-                                                }
-                                            }
-                                    );
+                                    boolean aplicado = correoAplicado
+                                            .equalsIgnoreCase(correo);
 
-                                    if (respuesta.length() > 0) {
-                                        Sesion.guardarPerfil(
-                                                PerfilActivity.this,
-                                                respuesta);
+                                    if (!aplicado) {
+                                        // El nombre igual se guarda.
+                                        guardarPerfilEnNube(
+                                                accessToken,
+                                                usuarioId,
+                                                nombre,
+                                                correoActual);
+
+                                        if (correoPendiente.equalsIgnoreCase(
+                                                correo)) {
+                                            mostrarAviso(
+                                                    "Te enviamos un enlace de "
+                                                            + "confirmación a "
+                                                            + correo
+                                                            + ". Tu correo "
+                                                            + "actual sigue "
+                                                            + "siendo "
+                                                            + correoActual
+                                                            + " hasta que lo "
+                                                            + "confirmes.");
+                                        } else {
+                                            mostrarAviso(
+                                                    "Supabase no aplicó el "
+                                                            + "cambio de correo. "
+                                                            + "Inténtalo de "
+                                                            + "nuevo.");
+                                        }
+                                        return;
                                     }
 
-                                    Sesion.actualizarDatosPerfil(
-                                            PerfilActivity.this,
+                                    Sesion.guardarUsuario(
+                                            PerfilActivity.this, usuario);
+                                    guardarPerfilEnNube(
+                                            accessToken,
+                                            usuarioId,
                                             nombre,
-                                            correoActual);
-
-                                    runOnUiThread(() -> {
-                                        mostrarDatos(nombre, correoActual);
-                                        Toast.makeText(
-                                                PerfilActivity.this,
-                                                "Perfil actualizado.",
-                                                Toast.LENGTH_SHORT
-                                        ).show();
-                                    });
+                                            correo);
                                 }
 
                                 @Override
                                 public void onError(String mensaje) {
                                     mostrarAviso(
-                                            "No se pudo guardar: "
+                                            "No se pudo cambiar el correo: "
                                                     + mensaje);
                                 }
                             });
                 })
                 .show();
+    }
+
+    /**
+     * Guarda nombre y correo en public.usuarios y replica el nombre en Auth.
+     */
+    private void guardarPerfilEnNube(
+            String accessToken,
+            String usuarioId,
+            String nombre,
+            String correo) {
+
+        SupabaseHelper.guardarOActualizarPerfil(
+                accessToken,
+                usuarioId,
+                nombre,
+                correo,
+                new SupabaseHelper.AuthCallback() {
+                    @Override
+                    public void onSuccess(JSONObject respuesta) {
+                        // El nombre también se guarda en Auth para
+                        // conservarlo al volver a entrar.
+                        SupabaseHelper.actualizarNombreAuth(
+                                accessToken,
+                                nombre,
+                                new SupabaseHelper.AuthCallback() {
+                                    @Override
+                                    public void onSuccess(
+                                            JSONObject usuario) {
+                                        Sesion.guardarUsuario(
+                                                PerfilActivity.this,
+                                                usuario);
+                                    }
+
+                                    @Override
+                                    public void onError(String mensaje) {
+                                        // El perfil ya se guardó; el nombre
+                                        // se reintenta en el próximo inicio.
+                                    }
+                                }
+                        );
+
+                        if (respuesta.length() > 0) {
+                            Sesion.guardarPerfil(
+                                    PerfilActivity.this,
+                                    respuesta);
+                        }
+
+                        Sesion.actualizarDatosPerfil(
+                                PerfilActivity.this,
+                                nombre,
+                                correo);
+
+                        runOnUiThread(() -> {
+                            mostrarDatos(nombre, correo);
+                            Toast.makeText(
+                                    PerfilActivity.this,
+                                    "Perfil actualizado.",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        mostrarAviso(
+                                "No se pudo guardar: " + mensaje);
+                    }
+                });
     }
 
     private void mostrarAviso(String mensaje) {

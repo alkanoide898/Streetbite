@@ -170,7 +170,7 @@ Auth en `auth.users`; esta tabla no las almacena.
 | `id` | `uuid` | Clave primaria. |
 | `usuario_id` | `uuid` | ID en `auth.users`. Único. |
 | `nombre` | `text` | Nombre visible. |
-| `correo` | `text` | Correo de la cuenta. Se toma de Auth y no se edita desde la app. |
+| `correo` | `text` | Correo de la cuenta, sincronizado con Auth. Se edita desde la app y se aplica al confirmar el enlace que llega a la nueva dirección. |
 | `created_at` | `timestamptz` | Fecha de creación. |
 
 La relación es `public.usuarios.usuario_id = auth.users.id`.
@@ -253,6 +253,24 @@ GET  /rest/v1/foodtrucks?select=...&order=rating.desc,nombre.asc
 - **Login** (`MainActivity`): llama a `/auth/v1/token?grant_type=password`,
   guarda la sesión, sincroniza el perfil y entra a Home.
 - **Discord**: flujo PKCE con retorno a la app mediante `streetbite://login-callback`.
+
+### Cambio de correo
+
+El correo es la identidad de la cuenta, por eso el cambio se hace desde
+Perfil > Mi información en dos pasos, sin que el usuario entre a Supabase:
+
+1. La app pide el nuevo correo a Supabase Auth (`PUT /auth/v1/user`) con la
+   sesión del usuario.
+2. Supabase envía un enlace de confirmación a la nueva dirección. Mientras no se
+   abra, la cuenta mantiene el correo anterior en `email` y guarda el nuevo en
+   `new_email`.
+3. Cada vez que se abre Mi información, la app compara el correo de Auth con el
+   de `public.usuarios`; cuando el cambio ya está confirmado, replica el correo
+   nuevo en el perfil, en la sesión local y en la pantalla.
+
+Si el cambio sigue pendiente, la app muestra el aviso correspondiente y no toca
+`public.usuarios`, así el correo visible siempre coincide con el que sirve para
+iniciar sesión.
 
 > **Nota:** si **Confirm email** está activado en Supabase, el registro no
 > devuelve sesión y la app avisa que hay que confirmar el correo. Para pruebas
@@ -435,6 +453,15 @@ perfiles de otros usuarios.
 
 ## Historial de cambios
 
+### 2026-11-17 — El correo se cambia desde la app
+
+- Perfil > Mi información permite editar el correo sin entrar a Supabase.
+- La app pide el cambio a Auth y reconoce el estado pendiente (`new_email`): en
+  ese caso avisa que se envió un enlace y mantiene el correo anterior tanto en
+  la cuenta como en `public.usuarios`.
+- Al abrir Mi información después de confirmar el enlace, el correo nuevo se
+  replica en el perfil público, en la sesión local y en la pantalla.
+
 ### 2026-11-17 — El perfil se guarda de verdad en Supabase
 
 - **Causa real**: la pantalla de perfil leía el nombre desde los metadatos de
@@ -445,8 +472,8 @@ perfiles de otros usuarios.
   un upsert atómico (`resolution=merge-duplicates`) y, si todo va bien, replica
   el nombre en `auth.users.user_metadata.full_name` para que se conserve al
   volver a entrar.
-- El correo de inicio de sesión se muestra de solo lectura: cambiarlo requiere
-  el flujo de verificación de Auth.
+- El correo de la cuenta se edita desde la app; el cambio se aplica cuando el
+  usuario confirma el enlace que Auth envía a la nueva dirección.
 - Al iniciar sesión o registrarse el perfil se crea solo si falta
   (`resolution=ignore-duplicates`), sin pisar ediciones anteriores.
 - Los avisos de error y el cierre de sesión se ejecutan en el hilo principal.

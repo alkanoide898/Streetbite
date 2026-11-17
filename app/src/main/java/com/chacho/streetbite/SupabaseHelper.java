@@ -352,6 +352,36 @@ public final class SupabaseHelper {
     }
 
     /**
+     * Cambia el correo de la cuenta en Supabase Auth.
+     * El correo de auth.users es el que se usa para iniciar sesión; después
+     * se actualiza la fila de public.usuarios con el mismo valor.
+     */
+    public static void cambiarCorreoAuth(
+            String accessToken,
+            String correo,
+            AuthCallback callback) {
+
+        try {
+            JSONObject datos = new JSONObject();
+            datos.put("email", correo);
+
+            Request solicitud = new Request.Builder()
+                    .url(SupabaseConfig.SUPABASE_URL + "/auth/v1/user")
+                    .put(RequestBody.create(datos.toString(), JSON))
+                    .addHeader("apikey",
+                            SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .addHeader("Content-Type", "application/json")
+                    .build();
+
+            ejecutar(solicitud, callback);
+
+        } catch (Exception e) {
+            callback.onError("No se pudo preparar el cambio de correo.");
+        }
+    }
+
+    /**
      * Crea o actualiza el perfil propio (upsert atómico).
      * Usa POST con resolution=merge-duplicates sobre usuario_id,
      * que tiene un índice único en public.usuarios.
