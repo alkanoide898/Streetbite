@@ -353,25 +353,27 @@ sesión abierta para que se pueda reintentar.
 
 ### Sonidos
 
-- `Sonidos.java` carga los efectos con `SoundPool`, así se reproducen al
-  instante y pueden solaparse sin cortarse.
+- `Sonidos.java` carga el efecto con `SoundPool` y espera a que termine de
+  cargar antes de reproducirlo, así el primer toque tras abrir la app no se
+  queda sin sonido.
 - `BaseActivity` detecta el toque sobre cualquier vista con listener desde
   `dispatchTouchEvent`: botones, chips, tarjetas y navegación suenan sin
-  envolver cada listener.
+  envolver cada listener. Un mismo gesto nunca dispara dos sonidos, aunque se
+  mantenga el dedo apoyado.
 - Los botones de los cuadros de diálogo están en otra ventana y no pasan por
-  ahí, así que `sonarBotonesDelDialogo()` les aplica el mismo sonido después de
-  mostrar el diálogo. Lo mismo vale para el interruptor de sonidos.
-- **Hay un solo sonido para toda la app**: `tap.wav`, un tono suave de 75 ms
-  con ataque de 4 ms y fundido a cero en la cola. No hay un sonido distinto
-  para las tarjetas.
+  ahí, así que `sonarBotonesDelDialogo()` les aplica el mismo efecto después de
+  mostrar el diálogo.
+- **Hay un solo sonido para toda la app**: `tap.wav`, un tono puro de 660 Hz de
+  60 ms, con ataque de 3 ms y fundido a cero en la cola. No tiene armónicos ni
+  barrido de frecuencia, que eran los que lo hacían sonar metálico y doble.
+- Si se toca rápido, el sonido nuevo reemplaza al anterior en vez de sumarse:
+  no se escuchan dos a la vez ni se distorsiona.
 - El sonido se programa al bajar el dedo y se cancela si el gesto se convierte
   en scroll. No depende de que el toque dure poco ni de que el dedo se mantenga
-  quieto, así suena una vez por toque sin importar el movimiento pequeño.
-- `SoundPool` espera a que termine de cargar antes de reproducir, así el primer
-  toque tras abrir la app no se queda sin sonido. Tiene 8 streams para que
-  varios toques seguidos no se corten.
+  quieto.
 - Se desactivan en **Perfil → Configuración** y el estado queda guardado en
-  `SharedPreferences` (`StreetBiteSonidos`).
+  `SharedPreferences` (`StreetBiteSonidos`). El interruptor suena una sola vez
+  al activar o desactivar.
 - Los WAV son propios, generados por síntesis, sin licencias externas.
 
 ### Animaciones
@@ -504,6 +506,17 @@ perfiles de otros usuarios.
 ---
 
 ## Historial de cambios
+
+### 2026-11-17 — Sonido sin dobles ni distorsión
+
+- El interruptor de sonidos dejó de sonar dos veces: antes sonaba al tocar la
+  vista y otra al cambiar de estado. Ahora suena una sola vez en cada sentido.
+- `BaseActivity` usa una marca por gesto para que el temporizador y el
+  `ACTION_UP` no puedan reproducir el mismo toque dos veces.
+- `tap.wav` es ahora un tono puro de 660 Hz y 60 ms. Se quitaron el armónico y
+  el barrido de frecuencia que lo hacían sonar metálico y como dos tonos.
+- `SoundPool` detiene el sonido anterior antes de reproducir el nuevo, así los
+  toques rápidos no se suman ni se distorsionan.
 
 ### 2026-11-17 — Un solo sonido para todos los botones
 

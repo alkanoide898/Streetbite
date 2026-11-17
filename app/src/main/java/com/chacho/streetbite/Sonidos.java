@@ -25,6 +25,7 @@ public final class Sonidos {
 
     private static SoundPool pool;
     private static int idTap;
+    private static int streamActual;
     private static volatile boolean listo;
 
     private Sonidos() {
@@ -71,7 +72,13 @@ public final class Sonidos {
         iniciar(contexto);
 
         if (listo && idTap != 0) {
-            pool.play(idTap, VOLUMEN, VOLUMEN, 1, 0, 1f);
+            // Si el usuario toca rápido, un sonido nuevo reemplaza al anterior
+            // en vez de sumarse: así no se escucha doble ni se distorsiona.
+            if (streamActual != 0) {
+                pool.stop(streamActual);
+            }
+
+            streamActual = pool.play(idTap, VOLUMEN, VOLUMEN, 1, 0, 1f);
         }
     }
 

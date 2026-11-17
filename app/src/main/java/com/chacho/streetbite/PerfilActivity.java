@@ -254,9 +254,14 @@ public class PerfilActivity extends BaseActivity {
         checkSonidos.setChecked(Sonidos.estaActivo(this));
 
         checkSonidos.setOnCheckedChangeListener((boton, activo) -> {
+            // Suena una sola vez en los dos sentidos: antes de desactivar o
+            // después de activar. Así no se duplica con el toque en la vista.
+            if (!activo) {
+                Sonidos.tocar(this);
+            }
+
             Sonidos.activar(this, activo);
 
-            // Suena de inmediato para que se note el cambio.
             if (activo) {
                 Sonidos.tocar(this);
             }
@@ -276,7 +281,6 @@ public class PerfilActivity extends BaseActivity {
                 .create();
         configuracion.show();
         sonarBotonesDelDialogo(configuracion);
-        sonarAlTocar(checkSonidos);
     }
 
     /**

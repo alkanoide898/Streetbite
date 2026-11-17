@@ -46,6 +46,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     private final Handler manejador = new Handler(Looper.getMainLooper());
 
     private Runnable sonidoPendiente;
+    private boolean sonidoYaReproducido;
     private float xInicial;
     private float yInicial;
     private View vistaInicial;
@@ -133,6 +134,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     public boolean dispatchTouchEvent(MotionEvent evento) {
         switch (evento.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
+                sonidoYaReproducido = false;
                 xInicial = evento.getRawX();
                 yInicial = evento.getRawY();
                 vistaInicial = buscarClickeable(
@@ -158,7 +160,9 @@ public abstract class BaseActivity extends AppCompatActivity {
                     // sonido ya sonó desde el temporizador.
                     cancelarSonido();
 
-                    if (vistaInicial != null && !seMovioDemasiado(evento)) {
+                    if (!sonidoYaReproducido && vistaInicial != null
+                            && !seMovioDemasiado(evento)) {
+                        sonidoYaReproducido = true;
                         Sonidos.tocar(this);
                     }
                 }
@@ -183,7 +187,11 @@ public abstract class BaseActivity extends AppCompatActivity {
 
         sonidoPendiente = () -> {
             sonidoPendiente = null;
-            Sonidos.tocar(this);
+
+            if (!sonidoYaReproducido) {
+                sonidoYaReproducido = true;
+                Sonidos.tocar(this);
+            }
         };
 
         manejador.postDelayed(sonidoPendiente, RETARDO_SONIDO_MS);
