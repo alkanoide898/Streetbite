@@ -254,6 +254,17 @@ GET  /rest/v1/foodtrucks?select=...&order=rating.desc,nombre.asc
   guarda la sesión, sincroniza el perfil y entra a Home.
 - **Discord**: flujo PKCE con retorno a la app mediante `streetbite://login-callback`.
 
+### Cómo funciona
+
+El inicio tiene un botón **▶ Cómo funciona** que abre `VideoAyudaActivity`, una
+pantalla propia con un recorrido de 1:46 por la app. El video está empaquetado
+en `res/raw/streetbite_recorrido.mp4`, así que funciona sin conexión y no
+depende de un enlace externo. Debajo del reproductor hay una guía de cinco
+pasos con lo que se ve en el recorrido.
+
+El recorrido muestra: catálogo y estado de los locales, buscador, categorías,
+filtro de abiertos, detalle con menú de fotos y visor, mapa y Mi información.
+
 ### Mi información
 
 Perfil > Mi información abre una pantalla propia de la app (no un diálogo):
@@ -481,6 +492,15 @@ perfiles de otros usuarios.
 ---
 
 ## Historial de cambios
+
+### 2026-11-17 — Video del recorrido dentro de la app
+
+- El inicio tiene un botón **▶ Cómo funciona** que abre una pantalla temática
+  con el video del recorrido y una guía de cinco pasos.
+- El video (`res/raw/streetbite_recorrido.mp4`) dura 1:46 y está incluido en
+  el APK: se reproduce sin conexión y con controles nativos.
+- La grabación recorre buscador, categorías, filtro de abiertos, detalle con
+  menú y zoom, mapa, perfil y Mi información.
 
 ### 2026-11-17 — Perfil más simple
 

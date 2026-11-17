@@ -58,6 +58,11 @@
             android:name=".MiInformacionActivity"
             android:exported="false" />
 
+        <!-- CÓMO FUNCIONA (VIDEO DEL RECORRIDO) -->
+        <activity
+            android:name=".VideoAyudaActivity"
+            android:exported="false" />
+
         <!-- DETALLE FOODTRUCK -->
         <activity
             android:name=".DetalleFoodtruckActivity"

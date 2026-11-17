@@ -116,6 +116,10 @@ public class HomeActivity extends BaseActivity {
             animarBotonNav(v);
             startActivity(new Intent(this, PerfilActivity.class));
         });
+
+        findViewById(R.id.btnComoFunciona).setOnClickListener(v ->
+                startActivity(new Intent(this, VideoAyudaActivity.class))
+        );
     }
 
     /** Rebote corto del botón de la barra inferior al tocarlo. */
