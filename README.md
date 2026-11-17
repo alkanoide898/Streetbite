@@ -272,6 +272,18 @@ Si el cambio sigue pendiente, la app muestra el aviso correspondiente y no toca
 `public.usuarios`, así el correo visible siempre coincide con el que sirve para
 iniciar sesión.
 
+### Eliminación de la cuenta
+
+Desde Perfil > Eliminar cuenta la app llama a la función
+`public.eliminar_mi_cuenta()` de Supabase, que borra el perfil y la cuenta de
+Auth en una sola operación. La función usa `SECURITY DEFINER` porque
+`auth.users` no se puede modificar con el token del usuario, y valida
+`auth.uid()` para que nadie pueda borrar la cuenta de otro. Viene incluida en
+`supabase/usuarios.sql` y hay que ejecutar ese archivo en el SQL Editor.
+
+Si la función no existe o la operación falla, la app muestra el error y deja la
+sesión abierta para que se pueda reintentar.
+
 > **Nota:** si **Confirm email** está activado en Supabase, el registro no
 > devuelve sesión y la app avisa que hay que confirmar el correo. Para pruebas
 > rápidas conviene desactivarlo o usar un usuario ya confirmado.
@@ -453,6 +465,16 @@ perfiles de otros usuarios.
 
 ## Historial de cambios
 
+### 2026-11-17 — Eliminar cuenta borra también Auth
+
+- Perfil > Eliminar cuenta llama a `public.eliminar_mi_cuenta()` (RPC con
+  `SECURITY DEFINER` y validación de `auth.uid()`), incluida en
+  `supabase/usuarios.sql`.
+- Antes solo se borraba el perfil público y la cuenta podía volver a entrar;
+  ahora se eliminan el perfil y el usuario de Auth juntos.
+- Si el servidor rechaza la eliminación, se muestra el error y la sesión sigue
+  activa para reintentar.
+
 ### 2026-11-17 — El correo se cambia desde la app
 
 - Perfil > Mi información permite editar el correo sin entrar a Supabase.
@@ -496,8 +518,8 @@ perfiles de otros usuarios.
   - **Leer**: el perfil se carga desde `public.usuarios` con el `usuario_id`.
   - **Actualizar**: desde Perfil > Mi información se puede editar nombre y
     correo; se envía un `PATCH` a Supabase y se actualiza la sesión local.
-  - **Eliminar**: desde Perfil > Eliminar cuenta se borra el perfil público y
-    se cierra la sesión local.
+  - **Eliminar**: desde Perfil > Eliminar cuenta se borra la cuenta completa
+    (perfil y Auth) y se cierra la sesión local.
 
 ### 2026-11-16 — Fotos reales y menú de cada local
 

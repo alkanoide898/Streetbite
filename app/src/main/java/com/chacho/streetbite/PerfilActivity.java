@@ -631,8 +631,8 @@ public class PerfilActivity extends BaseActivity {
                 .setTitle("Eliminar cuenta")
                 .setMessage(
                         "¿Estás seguro de que quieres eliminar tu cuenta? "
-                                + "Esta acción no se puede deshacer y se borrará "
-                                + "tu perfil y tu historial de favoritos.")
+                                + "Esta acción no se puede deshacer: se borrarán "
+                                + "tu cuenta, tu perfil y tus favoritos.")
                 .setNegativeButton("Cancelar", null)
                 .setPositiveButton("Eliminar", (dialogo, cual) -> eliminarCuenta())
                 .show();
@@ -640,30 +640,34 @@ public class PerfilActivity extends BaseActivity {
 
     private void eliminarCuenta() {
         String accessToken = Sesion.accessToken(this);
-        String usuarioId = Sesion.usuarioId(this);
 
-        if (accessToken.isEmpty() || usuarioId.isEmpty()) {
+        if (accessToken.isEmpty()) {
             volverAlLogin();
             return;
         }
 
-        SupabaseHelper.eliminarPerfil(
+        SupabaseHelper.eliminarCuenta(
                 accessToken,
-                usuarioId,
                 new SupabaseHelper.AuthCallback() {
                     @Override
                     public void onSuccess(JSONObject respuesta) {
-                        // El perfil público se borró; cerramos sesión local.
                         Sesion.limpiar(PerfilActivity.this);
-                        runOnUiThread(PerfilActivity.this::volverAlLogin);
+                        runOnUiThread(() -> {
+                            Toast.makeText(
+                                    PerfilActivity.this,
+                                    "Tu cuenta se eliminó.",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                            volverAlLogin();
+                        });
                     }
 
                     @Override
                     public void onError(String mensaje) {
-                        // Aunque falle el borrado remoto, cerramos sesión
-                        // local para no dejar al usuario colgado.
-                        Sesion.limpiar(PerfilActivity.this);
-                        runOnUiThread(PerfilActivity.this::volverAlLogin);
+                        // Si el borrado falla, la cuenta sigue activa: no se
+                        // cierra la sesión para que el usuario pueda reintentar.
+                        mostrarAviso(
+                                "No se pudo eliminar la cuenta: " + mensaje);
                     }
                 });
     }

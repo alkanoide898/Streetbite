@@ -397,27 +397,32 @@ public final class SupabaseHelper {
     }
 
     /**
-     * Elimina la fila del perfil propio de public.usuarios.
-     * La cuenta de auth debe borrarse desde el panel de Supabase o con el
-     * acceso de administrador; aquí se elimina el perfil público y se cierra
-     * la sesión local.
+     * Elimina la cuenta completa: perfil publico y usuario de Supabase Auth.
+     * La app no puede borrar auth.users con el token del usuario, por eso
+     * llama a la funcion public.eliminar_mi_cuenta() (SECURITY DEFINER) del
+     * archivo supabase/usuarios.sql. El servidor comprueba auth.uid(), asi
+     * que cada usuario solo puede borrar su propia cuenta.
      */
-    public static void eliminarPerfil(
+    public static void eliminarCuenta(
             String accessToken,
-            String usuarioId,
             AuthCallback callback) {
 
-        Request solicitud = new Request.Builder()
-                .url(SupabaseConfig.SUPABASE_URL
-                        + TABLA_USUARIOS
-                        + "?usuario_id=eq." + usuarioId)
-                .delete()
-                .addHeader("apikey",
-                        SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
-                .addHeader("Authorization", "Bearer " + accessToken)
-                .build();
+        try {
+            Request solicitud = new Request.Builder()
+                    .url(SupabaseConfig.SUPABASE_URL
+                            + "/rest/v1/rpc/eliminar_mi_cuenta")
+                    .post(RequestBody.create("{}", JSON))
+                    .addHeader("apikey",
+                            SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .addHeader("Content-Type", "application/json")
+                    .build();
 
-        ejecutar(solicitud, callback);
+            ejecutar(solicitud, callback);
+
+        } catch (Exception e) {
+            callback.onError("No se pudo preparar la eliminación.");
+        }
     }
 
     /**

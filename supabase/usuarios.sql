@@ -107,3 +107,30 @@ create trigger on_auth_user_created
     after insert on auth.users
     for each row
     execute function public.crear_perfil_usuario();
+
+-- Eliminacion real de la cuenta.
+-- La app no puede borrar filas de auth.users con el token del usuario:
+-- esa tabla solo se puede modificar desde el servidor. Esta funcion se
+-- ejecuta con los permisos del dueño de la funcion (SECURITY DEFINER) y
+-- borra el perfil y la cuenta de Auth de una sola vez.
+-- Importante: ejecutar este archivo completo en Supabase > SQL Editor.
+create or replace function public.eliminar_mi_cuenta()
+returns void
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+    uid uuid := auth.uid();
+begin
+    if uid is null then
+        raise exception 'Se requiere una sesion activa';
+    end if;
+
+    delete from public.usuarios where usuario_id = uid;
+    delete from auth.users where id = uid;
+end;
+$$;
+
+revoke all on function public.eliminar_mi_cuenta() from public;
+grant execute on function public.eliminar_mi_cuenta() to authenticated;
