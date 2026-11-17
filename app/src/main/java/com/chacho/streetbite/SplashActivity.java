@@ -353,11 +353,8 @@ public class SplashActivity extends BaseActivity {
             return;
         }
 
-        SupabaseHelper.guardarPerfil(
-                accessToken,
-                usuarioId,
-                nombre,
-                correo,
+        SupabaseHelper.crearPerfilSiFalta(
+                accessToken, usuarioId, nombre, correo,
                 new SupabaseHelper.AuthCallback() {
                     @Override
                     public void onSuccess(JSONObject perfil) {

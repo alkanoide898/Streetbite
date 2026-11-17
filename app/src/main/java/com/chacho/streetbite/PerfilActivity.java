@@ -154,7 +154,7 @@ public class PerfilActivity extends BaseActivity {
             return;
         }
 
-        SupabaseHelper.guardarPerfil(
+        SupabaseHelper.crearPerfilSiFalta(
                 accessToken,
                 usuarioId,
                 nombre,
@@ -211,6 +211,10 @@ public class PerfilActivity extends BaseActivity {
                 .show();
     }
 
+    /**
+     * Abre el editor con los datos que están guardados en la nube.
+     * Si la fila todavía no existe, la crea con los datos de la sesión.
+     */
     private void sincronizarYEditarPerfil() {
         String accessToken = Sesion.accessToken(this);
 
@@ -222,74 +226,125 @@ public class PerfilActivity extends BaseActivity {
             return;
         }
 
-        // Pedir el id de usuario a Supabase Auth para tener siempre el
-        // identificador correcto (el que coincide con auth.users).
-        SupabaseHelper.obtenerUsuario(
+        String usuarioId = Sesion.usuarioId(this);
+
+        if (usuarioId.isEmpty()) {
+            SupabaseHelper.obtenerUsuario(
+                    accessToken,
+                    new SupabaseHelper.AuthCallback() {
+                        @Override
+                        public void onSuccess(JSONObject usuario) {
+                            Sesion.guardarUsuario(
+                                    PerfilActivity.this, usuario);
+                            runOnUiThread(
+                                    PerfilActivity.this::
+                                            sincronizarYEditarPerfil);
+                        }
+
+                        @Override
+                        public void onError(String mensaje) {
+                            mostrarAviso(
+                                    "No se pudo obtener el usuario: "
+                                            + mensaje);
+                        }
+                    }
+            );
+            return;
+        }
+
+        SupabaseHelper.obtenerPerfil(
                 accessToken,
+                usuarioId,
                 new SupabaseHelper.AuthCallback() {
                     @Override
-                    public void onSuccess(JSONObject usuario) {
-                        Sesion.guardarUsuario(
-                                PerfilActivity.this, usuario
-                        );
-                        String usuarioId = Sesion.usuarioId(
-                                PerfilActivity.this
-                        );
-
-                        if (usuarioId.isEmpty()) {
-                            runOnUiThread(() -> Toast.makeText(
-                                    PerfilActivity.this,
-                                    "No se pudo obtener el id de usuario.",
-                                    Toast.LENGTH_LONG
-                            ).show());
+                    public void onSuccess(JSONObject perfil) {
+                        if (perfil.length() > 0) {
+                            Sesion.guardarPerfil(
+                                    PerfilActivity.this, perfil);
+                            runOnUiThread(() -> {
+                                mostrarDatos(
+                                        perfil.optString("nombre", ""),
+                                        perfil.optString("correo", "")
+                                );
+                                editarPerfil();
+                            });
                             return;
                         }
 
-                        // Crear o actualizar el perfil en la nube.
-                        // Si la fila no existe, on_conflict la crea;
-                        // si existe, la actualiza.
-                        SupabaseHelper.guardarOActualizarPerfil(
-                                accessToken,
-                                usuarioId,
-                                Sesion.nombre(PerfilActivity.this),
-                                Sesion.correo(PerfilActivity.this),
-                                new SupabaseHelper.AuthCallback() {
-                                    @Override
-                                    public void onSuccess(
-                                            JSONObject respuesta
-                                    ) {
-                                        Sesion.guardarPerfil(
-                                                PerfilActivity.this,
-                                                respuesta
-                                        );
-                                        runOnUiThread(
-                                                PerfilActivity.this::
-                                                        editarPerfil
-                                        );
-                                    }
-
-                                    @Override
-                                    public void onError(String mensaje) {
-                                        runOnUiThread(() -> Toast.makeText(
-                                                PerfilActivity.this,
-                                                "No se pudo sincronizar con "
-                                                        + "la nube: "
-                                                        + mensaje,
-                                                Toast.LENGTH_LONG
-                                        ).show());
-                                        editarPerfil();
-                                    }
-                                }
-                        );
+                        // No hay fila en la nube: se crea y luego se edita.
+                        crearPerfilYEditar(accessToken, usuarioId);
                     }
 
                     @Override
                     public void onError(String mensaje) {
-                        runOnUiThread(() -> Toast.makeText(
-                                PerfilActivity.this,
-                                "No se pudo obtener el usuario: " + mensaje,
-                                Toast.LENGTH_LONG
-                        ).show());
+                        mostrarAviso(
+                                "No se pudo leer tu perfil: " + mensaje);
+                        runOnUiThread(PerfilActivity.this::editarPerfil);
+                    }
+                }
+        );
+    }
+
+    /**
+     * Crea la fila del perfil con los datos de la sesión y abre el editor.
+     */
+    private void crearPerfilYEditar(
+            String accessToken,
+            String usuarioId) {
+
+        String nombre = Sesion.nombre(this);
+        String correo = Sesion.correo(this);
+
+        if (nombre.isEmpty() || correo.isEmpty()) {
+            SupabaseHelper.obtenerUsuario(
+                    accessToken,
+                    new SupabaseHelper.AuthCallback() {
+                        @Override
+                        public void onSuccess(JSONObject usuario) {
+                            Sesion.guardarUsuario(
+                                    PerfilActivity.this, usuario);
+                            runOnUiThread(() -> crearPerfilYEditar(
+                                    accessToken, usuarioId));
+                        }
+
+                        @Override
+                        public void onError(String mensaje) {
+                            mostrarAviso(
+                                    "No se pudieron leer tus datos: "
+                                            + mensaje);
+                        }
+                    }
+            );
+            return;
+        }
+
+        SupabaseHelper.crearPerfilSiFalta(
+                accessToken,
+                usuarioId,
+                nombre,
+                correo,
+                new SupabaseHelper.AuthCallback() {
+                    @Override
+                    public void onSuccess(JSONObject perfil) {
+                        if (perfil.length() > 0) {
+                            Sesion.guardarPerfil(
+                                    PerfilActivity.this, perfil);
+                        }
+
+                        runOnUiThread(() -> {
+                            mostrarDatos(
+                                    Sesion.nombre(PerfilActivity.this),
+                                    Sesion.correo(PerfilActivity.this)
+                            );
+                            editarPerfil();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        mostrarAviso(
+                                "No se pudo crear tu perfil: " + mensaje);
+                        runOnUiThread(PerfilActivity.this::editarPerfil);
                     }
                 }
         );
@@ -299,25 +354,35 @@ public class PerfilActivity extends BaseActivity {
         String nombreActual = Sesion.nombre(this);
         String correoActual = Sesion.correo(this);
 
+        float densidad = getResources().getDisplayMetrics().density;
+        int margen = Math.round(20f * densidad);
+
         LinearLayout contenedor = new LinearLayout(this);
         contenedor.setOrientation(LinearLayout.VERTICAL);
-        contenedor.setPadding(
-                Math.round(20f * getResources().getDisplayMetrics().density),
-                0,
-                Math.round(20f * getResources().getDisplayMetrics().density),
-                0);
+        contenedor.setPadding(margen, 0, margen, 0);
 
         EditText inputNombre = new EditText(this);
         inputNombre.setHint("Nombre");
         inputNombre.setText(nombreActual);
         inputNombre.setInputType(InputType.TYPE_CLASS_TEXT);
+        inputNombre.setSelectAllOnFocus(true);
         contenedor.addView(inputNombre);
 
         EditText inputCorreo = new EditText(this);
         inputCorreo.setHint("Correo electrónico");
         inputCorreo.setText(correoActual);
         inputCorreo.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        inputCorreo.setEnabled(false);
+        inputCorreo.setFocusable(false);
         contenedor.addView(inputCorreo);
+
+        TextView nota = new TextView(this);
+        nota.setText(
+                "El correo de inicio de sesión no se cambia desde aquí.");
+        nota.setTextSize(12f);
+        nota.setAlpha(0.7f);
+        nota.setPadding(0, Math.round(-4f * densidad), 0, 0);
+        contenedor.addView(nota);
 
         new AlertDialog.Builder(this)
                 .setTitle("Editar perfil")
@@ -325,11 +390,10 @@ public class PerfilActivity extends BaseActivity {
                 .setNegativeButton("Cancelar", null)
                 .setPositiveButton("Guardar", (dialogo, cual) -> {
                     String nombre = inputNombre.getText().toString().trim();
-                    String correo = inputCorreo.getText().toString().trim();
 
-                    if (nombre.isEmpty() || correo.isEmpty()) {
+                    if (nombre.isEmpty() || correoActual.isEmpty()) {
                         Toast.makeText(this,
-                                "Completa nombre y correo.", Toast.LENGTH_SHORT)
+                                "Escribe tu nombre.", Toast.LENGTH_SHORT)
                                 .show();
                         return;
                     }
@@ -346,28 +410,69 @@ public class PerfilActivity extends BaseActivity {
                             accessToken,
                             usuarioId,
                             nombre,
-                            correo,
+                            correoActual,
                             new SupabaseHelper.AuthCallback() {
                                 @Override
                                 public void onSuccess(JSONObject respuesta) {
-                                    Sesion.guardarPerfil(
-                                            PerfilActivity.this, respuesta);
-                                    runOnUiThread(() -> mostrarDatos(
-                                            nombre, correo));
-                                    Toast.makeText(PerfilActivity.this,
-                                            "Perfil guardado en la nube.",
-                                            Toast.LENGTH_SHORT).show();
+                                    // El nombre también se guarda en Auth
+                                    // para conservarlo al volver a entrar.
+                                    SupabaseHelper.actualizarNombreAuth(
+                                            accessToken,
+                                            nombre,
+                                            new SupabaseHelper.AuthCallback() {
+                                                @Override
+                                                public void onSuccess(
+                                                        JSONObject usuario) {
+                                                    Sesion.guardarUsuario(
+                                                            PerfilActivity.this,
+                                                            usuario);
+                                                }
+
+                                                @Override
+                                                public void onError(
+                                                        String mensaje) {
+                                                    // El perfil ya se guardó;
+                                                    // el nombre se reintenta
+                                                    // en el próximo inicio.
+                                                }
+                                            }
+                                    );
+
+                                    if (respuesta.length() > 0) {
+                                        Sesion.guardarPerfil(
+                                                PerfilActivity.this,
+                                                respuesta);
+                                    }
+
+                                    Sesion.actualizarDatosPerfil(
+                                            PerfilActivity.this,
+                                            nombre,
+                                            correoActual);
+
+                                    runOnUiThread(() -> {
+                                        mostrarDatos(nombre, correoActual);
+                                        Toast.makeText(
+                                                PerfilActivity.this,
+                                                "Perfil actualizado.",
+                                                Toast.LENGTH_SHORT
+                                        ).show();
+                                    });
                                 }
 
                                 @Override
                                 public void onError(String mensaje) {
-                                    Toast.makeText(PerfilActivity.this,
-                                            "No se pudo guardar: " + mensaje,
-                                            Toast.LENGTH_LONG).show();
+                                    mostrarAviso(
+                                            "No se pudo guardar: "
+                                                    + mensaje);
                                 }
                             });
                 })
                 .show();
+    }
+
+    private void mostrarAviso(String mensaje) {
+        runOnUiThread(() -> Toast.makeText(
+                PerfilActivity.this, mensaje, Toast.LENGTH_LONG).show());
     }
 
     private void confirmarEliminarCuenta() {
@@ -399,7 +504,7 @@ public class PerfilActivity extends BaseActivity {
                     public void onSuccess(JSONObject respuesta) {
                         // El perfil público se borró; cerramos sesión local.
                         Sesion.limpiar(PerfilActivity.this);
-                        volverAlLogin();
+                        runOnUiThread(PerfilActivity.this::volverAlLogin);
                     }
 
                     @Override
@@ -407,7 +512,7 @@ public class PerfilActivity extends BaseActivity {
                         // Aunque falle el borrado remoto, cerramos sesión
                         // local para no dejar al usuario colgado.
                         Sesion.limpiar(PerfilActivity.this);
-                        volverAlLogin();
+                        runOnUiThread(PerfilActivity.this::volverAlLogin);
                     }
                 });
     }

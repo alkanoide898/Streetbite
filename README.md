@@ -170,7 +170,7 @@ Auth en `auth.users`; esta tabla no las almacena.
 | `id` | `uuid` | Clave primaria. |
 | `usuario_id` | `uuid` | ID en `auth.users`. Único. |
 | `nombre` | `text` | Nombre visible. |
-| `correo` | `text` | Correo del usuario. |
+| `correo` | `text` | Correo de la cuenta. Se toma de Auth y no se edita desde la app. |
 | `created_at` | `timestamptz` | Fecha de creación. |
 
 La relación es `public.usuarios.usuario_id = auth.users.id`.
@@ -374,9 +374,21 @@ on public.usuarios (usuario_id);
 
 ### El perfil no aparece en `usuarios`
 
-Revisar que exista el trigger `on_auth_user_created`, que la app tenga un
-`access_token` válido, que las políticas INSERT/SELECT estén creadas y que
-`usuario_id` coincida con el `id` de `auth.users`.
+La tabla tiene RLS activo: si se consulta con la _publishable key_ (rol `anon`),
+la API devuelve `[]` aunque la fila exista, porque anon no tiene política de
+lectura. Para comprobarlo hay que usar el `access_token` del usuario:
+
+```text
+GET /rest/v1/usuarios?select=usuario_id,nombre,correo
+apikey: <publishable_key>
+Authorization: Bearer <access_token>
+```
+
+Si ahí aparece la fila, el perfil está bien guardado. Si no aparece, revisar que
+la app tenga un `access_token` válido, que las políticas INSERT/SELECT existan y
+que `usuario_id` coincida con el `id` de `auth.users`. El trigger
+`on_auth_user_created` es opcional: la app crea la fila con
+`resolution=ignore-duplicates` la primera vez que se inicia sesión.
 
 ### Discord no vuelve a la app
 
@@ -422,6 +434,24 @@ perfiles de otros usuarios.
 ---
 
 ## Historial de cambios
+
+### 2026-11-17 — El perfil se guarda de verdad en Supabase
+
+- **Causa real**: la pantalla de perfil leía el nombre desde los metadatos de
+  Auth y lo volvía a escribir en `public.usuarios` antes de abrir el diálogo,
+  así que cualquier edición se pisaba con el dato viejo. Además, al iniciar
+  sesión se hacía un upsert que sobrescribía el nombre editado.
+- **Actualizar**: el diálogo parte de los datos de `public.usuarios`, guarda con
+  un upsert atómico (`resolution=merge-duplicates`) y, si todo va bien, replica
+  el nombre en `auth.users.user_metadata.full_name` para que se conserve al
+  volver a entrar.
+- El correo de inicio de sesión se muestra de solo lectura: cambiarlo requiere
+  el flujo de verificación de Auth.
+- Al iniciar sesión o registrarse el perfil se crea solo si falta
+  (`resolution=ignore-duplicates`), sin pisar ediciones anteriores.
+- Los avisos de error y el cierre de sesión se ejecutan en el hilo principal.
+- Verificado en el emulador: el nombre editado aparece en `public.usuarios` y en
+  Auth, y sigue ahí después de cerrar y abrir la app.
 
 ### 2026-11-16 — Estados de apertura variados
 

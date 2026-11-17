@@ -154,6 +154,27 @@ public final class Sesion {
         editor.apply();
     }
 
+    /**
+     * Actualiza en local el nombre y el correo visibles del perfil.
+     */
+    public static void actualizarDatosPerfil(
+            Context contexto,
+            String nombre,
+            String correo) {
+
+        SharedPreferences.Editor editor = preferencias(contexto).edit();
+
+        if (nombre != null && !nombre.isEmpty()) {
+            editor.putString(USER_NOMBRE, nombre);
+        }
+
+        if (correo != null && !correo.isEmpty()) {
+            editor.putString(USER_CORREO, correo);
+        }
+
+        editor.apply();
+    }
+
     public static boolean haySesion(Context contexto) {
         return !accessToken(contexto).isEmpty()
                 && !refreshToken(contexto).isEmpty();
