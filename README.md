@@ -257,13 +257,15 @@ GET  /rest/v1/foodtrucks?select=...&order=rating.desc,nombre.asc
 ### Cómo funciona
 
 El inicio tiene un botón **▶ Cómo funciona** que abre `VideoAyudaActivity`, una
-pantalla propia con un recorrido de 1:46 por la app. El video está empaquetado
+pantalla propia con un recorrido de 1:11 por la app. El video está empaquetado
 en `res/raw/streetbite_recorrido.mp4`, así que funciona sin conexión y no
 depende de un enlace externo. Debajo del reproductor hay una guía de cinco
 pasos con lo que se ve en el recorrido.
 
-El recorrido muestra: catálogo y estado de los locales, buscador, categorías,
-filtro de abiertos, detalle con menú de fotos y visor, mapa y Mi información.
+El archivo se graba en vertical y se convierte a MP4 (H.264 + AAC) antes de
+copiarlo a `res/raw`: el WebM original pesaba 111 MB y la versión incluida en
+la app pesa unos 6 MB, con la misma resolución 1080×2400. El video conserva el
+audio de la grabación.
 
 ### Mi información
 
@@ -497,10 +499,11 @@ perfiles de otros usuarios.
 
 - El inicio tiene un botón **▶ Cómo funciona** que abre una pantalla temática
   con el video del recorrido y una guía de cinco pasos.
-- El video (`res/raw/streetbite_recorrido.mp4`) dura 1:46 y está incluido en
+- El video (`res/raw/streetbite_recorrido.mp4`) dura 1:11 y está incluido en
   el APK: se reproduce sin conexión y con controles nativos.
-- La grabación recorre buscador, categorías, filtro de abiertos, detalle con
-  menú y zoom, mapa, perfil y Mi información.
+- Se reemplazó la grabación del emulador por el video grabado por el usuario
+  (`videostreetbite.webm`), convertido de WebM a MP4 H.264/AAC y comprimido de
+  111 MB a unos 6 MB sin bajar la resolución.
 
 ### 2026-11-17 — Perfil más simple
 
