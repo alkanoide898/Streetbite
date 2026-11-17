@@ -258,7 +258,7 @@ public class PerfilActivity extends BaseActivity {
 
             // Suena de inmediato para que se note el cambio.
             if (activo) {
-                Sonidos.tocar(this, Sonidos.TAP);
+                Sonidos.tocar(this);
             }
         });
 
@@ -269,11 +269,14 @@ public class PerfilActivity extends BaseActivity {
         contenedor.setPadding(margen, margen / 2, margen, 0);
         contenedor.addView(checkSonidos);
 
-        new AlertDialog.Builder(this)
+        AlertDialog configuracion = new AlertDialog.Builder(this)
                 .setTitle("Configuración")
                 .setView(contenedor)
                 .setPositiveButton("Listo", null)
-                .show();
+                .create();
+        configuracion.show();
+        sonarBotonesDelDialogo(configuracion);
+        sonarAlTocar(checkSonidos);
     }
 
     /**
@@ -441,7 +444,7 @@ public class PerfilActivity extends BaseActivity {
     }
 
     private void confirmarEliminarCuenta() {
-        new AlertDialog.Builder(this)
+        AlertDialog confirmacion = new AlertDialog.Builder(this)
                 .setTitle("Eliminar cuenta")
                 .setMessage(
                         "¿Estás seguro de que quieres eliminar tu cuenta? "
@@ -449,7 +452,9 @@ public class PerfilActivity extends BaseActivity {
                                 + "tu cuenta, tu perfil y tus favoritos.")
                 .setNegativeButton("Cancelar", null)
                 .setPositiveButton("Eliminar", (dialogo, cual) -> eliminarCuenta())
-                .show();
+                .create();
+        confirmacion.show();
+        sonarBotonesDelDialogo(confirmacion);
     }
 
     private void eliminarCuenta() {
@@ -487,12 +492,14 @@ public class PerfilActivity extends BaseActivity {
     }
 
     private void confirmarCierre() {
-        new AlertDialog.Builder(this)
+        AlertDialog confirmacion = new AlertDialog.Builder(this)
                 .setTitle("Cerrar sesión")
                 .setMessage("¿Quieres salir de tu cuenta?")
                 .setNegativeButton("Cancelar", null)
                 .setPositiveButton("Cerrar sesión", (d, w) -> cerrarSesion())
-                .show();
+                .create();
+        confirmacion.show();
+        sonarBotonesDelDialogo(confirmacion);
     }
 
     private void cerrarSesion() {

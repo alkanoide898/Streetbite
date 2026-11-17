@@ -149,7 +149,7 @@ public class MiInformacionActivity extends BaseActivity {
                                 edtCorreo.setText(correoActual);
 
                                 if (correoPendiente.equalsIgnoreCase(correo)) {
-                                    new AlertDialog.Builder(
+                                    AlertDialog aviso = new AlertDialog.Builder(
                                             MiInformacionActivity.this)
                                             .setTitle("Confirma tu correo")
                                             .setMessage(
@@ -165,7 +165,9 @@ public class MiInformacionActivity extends BaseActivity {
                                             )
                                             .setPositiveButton(
                                                     "Entendido", null)
-                                            .show();
+                                            .create();
+                                    aviso.show();
+                                    sonarBotonesDelDialogo(aviso);
                                 } else {
                                     mostrarAviso(
                                             "Supabase no aplicó el cambio de "

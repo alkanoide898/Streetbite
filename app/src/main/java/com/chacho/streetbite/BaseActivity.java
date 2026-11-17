@@ -1,15 +1,17 @@
 package com.chacho.streetbite;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
-import android.os.SystemClock;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
-import android.view.ViewParent;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -23,11 +25,11 @@ import org.osmdroid.views.MapView;
  *
  * El sonido se dispara desde dispatchTouchEvent y no desde cada
  * setOnClickListener. Así funciona en todos los botones, chips y tarjetas
- * sin tener que envolver listener por listener.
+ * sin tener que envolver listener por listener, y siempre es el mismo.
  *
- * Solo suena cuando el dedo baja y sube sobre la MISMA vista clickeable,
- * con poco movimiento y poco tiempo. Al hacer scroll en una lista el
- * gesto se cancela o se mueve demasiado, así que no suena.
+ * Suena una vez por toque: se programa al bajar el dedo y se cancela si el
+ * gesto se convierte en scroll. No depende de que el toque sea corto ni de
+ * que el dedo se mantenga quieto, para que no se pierda ningún sonido.
  *
  * También deja el contenido fuera de las barras del sistema: desde Android 15
  * la app se dibuja edge-to-edge y la barra de estado se comía los toques de
@@ -35,11 +37,17 @@ import org.osmdroid.views.MapView;
  */
 public abstract class BaseActivity extends AppCompatActivity {
 
-    private static final long DURACION_MAXIMA_MS = 600L;
+    /**
+     * Si el dedo sigue apoyado después de este tiempo, el sonido suena igual.
+     * Así un toque largo no se queda sin feedback.
+     */
+    private static final long RETARDO_SONIDO_MS = 70L;
 
+    private final Handler manejador = new Handler(Looper.getMainLooper());
+
+    private Runnable sonidoPendiente;
     private float xInicial;
     private float yInicial;
-    private long tiempoInicial;
     private View vistaInicial;
 
     private int toqueMinimo;
@@ -127,22 +135,38 @@ public abstract class BaseActivity extends AppCompatActivity {
             case MotionEvent.ACTION_DOWN:
                 xInicial = evento.getRawX();
                 yInicial = evento.getRawY();
-                tiempoInicial = SystemClock.uptimeMillis();
                 vistaInicial = buscarClickeable(
                         getWindow().getDecorView(), xInicial, yInicial);
+
+                if (vistaInicial != null) {
+                    programarSonido();
+                }
+                break;
+
+            case MotionEvent.ACTION_MOVE:
+                // Si el gesto se convierte en scroll, se cancela el sonido.
+                if (vistaInicial != null && seMovioDemasiado(evento)) {
+                    cancelarSonido();
+                    vistaInicial = null;
+                }
                 break;
 
             case MotionEvent.ACTION_UP:
-                if (esToqueValido(evento)) {
-                    int sonido = dentroDeLista(vistaInicial)
-                            ? Sonidos.TARJETA
-                            : Sonidos.TAP;
-                    Sonidos.tocar(this, sonido);
+                if (sonidoPendiente != null) {
+                    // Toque corto: suena al soltar, que es cuando Android
+                    // ejecuta el click. Si el dedo se mantuvo apoyado, el
+                    // sonido ya sonó desde el temporizador.
+                    cancelarSonido();
+
+                    if (vistaInicial != null && !seMovioDemasiado(evento)) {
+                        Sonidos.tocar(this);
+                    }
                 }
                 vistaInicial = null;
                 break;
 
             case MotionEvent.ACTION_CANCEL:
+                cancelarSonido();
                 vistaInicial = null;
                 break;
 
@@ -153,26 +177,47 @@ public abstract class BaseActivity extends AppCompatActivity {
         return super.dispatchTouchEvent(evento);
     }
 
+    /** Programa el sonido para que suene aunque el usuario mantenga el dedo. */
+    private void programarSonido() {
+        cancelarSonido();
+
+        sonidoPendiente = () -> {
+            sonidoPendiente = null;
+            Sonidos.tocar(this);
+        };
+
+        manejador.postDelayed(sonidoPendiente, RETARDO_SONIDO_MS);
+    }
+
+    private void cancelarSonido() {
+        if (sonidoPendiente != null) {
+            manejador.removeCallbacks(sonidoPendiente);
+            sonidoPendiente = null;
+        }
+    }
+
     /**
-     * Comprueba que el gesto sea un toque y no un arrastre. No se usa
-     * isPressed(): dentro de un RecyclerView (o un scroll horizontal)
-     * Android retrasa el estado "pressed" y llega en false al ACTION_UP.
-     * Al hacer scroll la vista recibe ACTION_CANCEL, así que no suena.
+     * El umbral es el doble del slop de Android: un toque con un pequeño
+     * temblor sigue sonando, pero un arrastre cancela el efecto.
      */
-    private boolean esToqueValido(MotionEvent evento) {
-        if (vistaInicial == null) {
-            return false;
-        }
-
-        long duracion = SystemClock.uptimeMillis() - tiempoInicial;
-        if (duracion > DURACION_MAXIMA_MS) {
-            return false;
-        }
-
+    private boolean seMovioDemasiado(MotionEvent evento) {
         float dx = evento.getRawX() - xInicial;
         float dy = evento.getRawY() - yInicial;
+        float limite = 2f * toqueMinimo;
 
-        return (dx * dx + dy * dy) <= (float) toqueMinimo * toqueMinimo;
+        return dx * dx + dy * dy > limite * limite;
+    }
+
+    @Override
+    protected void onPause() {
+        cancelarSonido();
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        cancelarSonido();
+        super.onDestroy();
     }
 
     /**
@@ -228,19 +273,31 @@ public abstract class BaseActivity extends AppCompatActivity {
         return interactiva ? vista : null;
     }
 
-    /** true si la vista está dentro de una lista (tarjeta de foodtruck). */
-    private boolean dentroDeLista(View vista) {
-        View actual = vista;
+    /**
+     * Los cuadros de diálogo tienen su propia ventana, así que sus botones no
+     * pasan por dispatchTouchEvent de la Activity. Se les pone el mismo sonido
+     * sin reemplazar sus listeners de click. Debe llamarse después de show().
+     */
+    protected void sonarBotonesDelDialogo(AlertDialog dialogo) {
+        sonarAlTocar(
+                dialogo.getButton(DialogInterface.BUTTON_POSITIVE),
+                dialogo.getButton(DialogInterface.BUTTON_NEGATIVE),
+                dialogo.getButton(DialogInterface.BUTTON_NEUTRAL));
+    }
 
-        while (actual != null) {
-            if (actual instanceof RecyclerView) {
-                return true;
+    /** Aplica el sonido de toque a vistas que viven fuera de la Activity. */
+    protected void sonarAlTocar(View... vistas) {
+        for (View vista : vistas) {
+            if (vista == null) {
+                continue;
             }
 
-            ViewParent padre = actual.getParent();
-            actual = padre instanceof View ? (View) padre : null;
+            vista.setOnTouchListener((v, evento) -> {
+                if (evento.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    Sonidos.tocar(this);
+                }
+                return false;
+            });
         }
-
-        return false;
     }
 }

@@ -356,15 +356,20 @@ sesión abierta para que se pueda reintentar.
 - `Sonidos.java` carga los efectos con `SoundPool`, así se reproducen al
   instante y pueden solaparse sin cortarse.
 - `BaseActivity` detecta el toque sobre cualquier vista con listener desde
-  `dispatchTouchEvent`: los botones, chips y tarjetas ya existentes suenan sin
+  `dispatchTouchEvent`: botones, chips, tarjetas y navegación suenan sin
   envolver cada listener.
-- Botones, chips y navegación usan `tap.wav`; las tarjetas usan `tarjeta.wav`.
-  Ambos son tonos suaves de 78 y 88 ms, con ataque de 4 ms y fundido a cero en
-  la cola: no tienen clics de inicio ni cortes bruscos al terminar.
-- `SoundPool` espera a que terminen de cargar antes de reproducirlos, así el
-  primer toque tras abrir la app no se queda sin sonido. Tiene 8 streams para
-  que varios toques seguidos no se corten por falta de canales.
-- Al hacer scroll no suenan.
+- Los botones de los cuadros de diálogo están en otra ventana y no pasan por
+  ahí, así que `sonarBotonesDelDialogo()` les aplica el mismo sonido después de
+  mostrar el diálogo. Lo mismo vale para el interruptor de sonidos.
+- **Hay un solo sonido para toda la app**: `tap.wav`, un tono suave de 75 ms
+  con ataque de 4 ms y fundido a cero en la cola. No hay un sonido distinto
+  para las tarjetas.
+- El sonido se programa al bajar el dedo y se cancela si el gesto se convierte
+  en scroll. No depende de que el toque dure poco ni de que el dedo se mantenga
+  quieto, así suena una vez por toque sin importar el movimiento pequeño.
+- `SoundPool` espera a que termine de cargar antes de reproducir, así el primer
+  toque tras abrir la app no se queda sin sonido. Tiene 8 streams para que
+  varios toques seguidos no se corten.
 - Se desactivan en **Perfil → Configuración** y el estado queda guardado en
   `SharedPreferences` (`StreetBiteSonidos`).
 - Los WAV son propios, generados por síntesis, sin licencias externas.
@@ -499,6 +504,16 @@ perfiles de otros usuarios.
 ---
 
 ## Historial de cambios
+
+### 2026-11-17 — Un solo sonido para todos los botones
+
+- Se eliminó `tarjeta.wav` y el sonido de tarjetas: ahora toda la interfaz usa
+  el mismo `tap.wav`, más audible y con el mismo ataque y cola suaves.
+- `BaseActivity` ya no exige toques cortos ni sin movimiento: programa el
+  sonido al bajar el dedo y lo cancela solo si el gesto se vuelve scroll. Así
+  no se pierden sonidos por pequeños temblores del dedo ni por toques largos.
+- Los botones de los diálogos (Configuración, Cerrar sesión, Eliminar cuenta y
+  Recuperar contraseña) también usan el mismo sonido.
 
 ### 2026-11-17 — Sonidos más suaves y sin cortes
 

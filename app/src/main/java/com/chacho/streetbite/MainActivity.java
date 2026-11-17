@@ -351,6 +351,7 @@ public class MainActivity extends BaseActivity {
                 }));
 
         dialogo.show();
+        sonarBotonesDelDialogo(dialogo);
     }
 
     private void enviarRecuperacion(String correo) {
