@@ -254,10 +254,17 @@ GET  /rest/v1/foodtrucks?select=...&order=rating.desc,nombre.asc
   guarda la sesión, sincroniza el perfil y entra a Home.
 - **Discord**: flujo PKCE con retorno a la app mediante `streetbite://login-callback`.
 
+### Mi información
+
+Perfil > Mi información abre una pantalla propia de la app (no un diálogo):
+muestra la cuenta actual y permite editar nombre y correo en campos con el
+mismo estilo que el registro. El botón **Guardar cambios** valida los datos,
+los envía a Supabase y vuelve al perfil con la cabecera actualizada.
+
 ### Cambio de correo
 
 El correo es la identidad de la cuenta, por eso el cambio se hace desde
-Perfil > Mi información en dos pasos, sin que el usuario entre a Supabase:
+Mi información en dos pasos, sin que el usuario entre a Supabase:
 
 1. La app pide el nuevo correo a Supabase Auth (`PUT /auth/v1/user`) con la
    sesión del usuario.
@@ -474,6 +481,17 @@ perfiles de otros usuarios.
 ---
 
 ## Historial de cambios
+
+### 2026-11-17 — Pantalla propia para Mi información
+
+- Perfil > Mi información ya no abre un diálogo: abre `MiInformacionActivity`,
+  una pantalla con el estilo de StreetBite (fondo crema, tarjetas, campos y
+  botón naranja).
+- Muestra la cuenta actual, permite editar nombre y correo y valida los datos
+  antes de guardar.
+- El guardado mantiene el flujo de confirmación del correo: si el cambio queda
+  pendiente, se avisa en la pantalla y se conserva el correo anterior.
+- Al volver, la cabecera del perfil se refresca con los datos guardados.
 
 ### 2026-11-17 — El registro ya no depende del trigger del perfil
 
