@@ -280,6 +280,65 @@ public final class SupabaseHelper {
     }
 
     /**
+     * Actualiza el nombre y el correo del perfil propio.
+     * RLS solo permite editar la fila del usuario autenticado.
+     */
+    public static void actualizarPerfil(
+            String accessToken,
+            String usuarioId,
+            String nombre,
+            String correo,
+            AuthCallback callback) {
+
+        try {
+            JSONObject cambios = new JSONObject();
+            cambios.put("nombre", nombre);
+            cambios.put("correo", correo);
+
+            Request solicitud = new Request.Builder()
+                    .url(SupabaseConfig.SUPABASE_URL
+                            + TABLA_USUARIOS
+                            + "?usuario_id=eq." + usuarioId)
+                    .patch(RequestBody.create(cambios.toString(), JSON))
+                    .addHeader("apikey",
+                            SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("Prefer", "return=representation")
+                    .build();
+
+            ejecutar(solicitud, callback);
+
+        } catch (Exception e) {
+            callback.onError("No se pudo preparar la actualización.");
+        }
+    }
+
+    /**
+     * Elimina la fila del perfil propio de public.usuarios.
+     * La cuenta de auth debe borrarse desde el panel de Supabase o con el
+     * acceso de administrador; aquí se elimina el perfil público y se cierra
+     * la sesión local.
+     */
+    public static void eliminarPerfil(
+            String accessToken,
+            String usuarioId,
+            AuthCallback callback) {
+
+        Request solicitud = new Request.Builder()
+                .url(SupabaseConfig.SUPABASE_URL
+                        + TABLA_USUARIOS
+                        + "?usuario_id=eq." + usuarioId)
+                .delete()
+                .addHeader("apikey",
+                        SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .build();
+
+        ejecutar(solicitud, callback);
+    }
+
+    /**
      * Toma los datos de una respuesta de Auth (signup, login, /user) y los
      * guarda en public.usuarios. Si algo falla, la sesión sigue siendo válida.
      */

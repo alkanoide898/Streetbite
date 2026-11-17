@@ -429,6 +429,19 @@ perfiles de otros usuarios.
   ambos estados y el filtro "solo abiertos" tenga efecto real.
 - El seed de `supabase/foodtrucks.sql` y el respaldo local quedan sincronizados.
 
+### 2026-11-16 — Ícono de la aplicación y CRUD del usuario
+
+- El ícono del lanzador ahora usa el mismo logo del splash (foodtruck
+  StreetBite sobre fondo marrón), con versión monocromática para Android 13+.
+- CRUD completo del perfil de usuario:
+  - **Crear**: el registro crea la cuenta en Supabase Auth y el perfil en
+    `public.usuarios`.
+  - **Leer**: el perfil se carga desde `public.usuarios` con el `usuario_id`.
+  - **Actualizar**: desde Perfil > Mi información se puede editar nombre y
+    correo; se envía un `PATCH` a Supabase y se actualiza la sesión local.
+  - **Eliminar**: desde Perfil > Eliminar cuenta se borra el perfil público y
+    se cierra la sesión local.
+
 ### 2026-11-16 — Fotos reales y menú de cada local
 
 - Se incorporaron 40 imágenes optimizadas (8 logos y 32 fotos de platos) en

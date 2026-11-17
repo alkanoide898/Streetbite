@@ -2,7 +2,9 @@ package com.chacho.streetbite;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.InputType;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -39,7 +41,10 @@ public class PerfilActivity extends BaseActivity {
         LinearLayout btnAyuda = findViewById(R.id.btnAyuda);
         LinearLayout btnCerrarSesion = findViewById(R.id.btnCerrarSesion);
 
-        btnMiPerfil.setOnClickListener(v -> mostrarInformacion());
+        btnMiPerfil.setOnClickListener(v -> editarPerfil());
+
+        LinearLayout btnEliminarCuenta = findViewById(R.id.btnEliminarCuenta);
+        btnEliminarCuenta.setOnClickListener(v -> confirmarEliminarCuenta());
 
         btnFavoritos.setOnClickListener(v ->
                 Toast.makeText(this, "Mis favoritos", Toast.LENGTH_SHORT).show()
@@ -206,19 +211,121 @@ public class PerfilActivity extends BaseActivity {
                 .show();
     }
 
-    private void mostrarInformacion() {
-        String nombre = Sesion.nombre(this);
-        String correo = Sesion.correo(this);
+    private void editarPerfil() {
+        String nombreActual = Sesion.nombre(this);
+        String correoActual = Sesion.correo(this);
+
+        LinearLayout contenedor = new LinearLayout(this);
+        contenedor.setOrientation(LinearLayout.VERTICAL);
+        contenedor.setPadding(
+                Math.round(20f * getResources().getDisplayMetrics().density),
+                0,
+                Math.round(20f * getResources().getDisplayMetrics().density),
+                0);
+
+        EditText inputNombre = new EditText(this);
+        inputNombre.setHint("Nombre");
+        inputNombre.setText(nombreActual);
+        inputNombre.setInputType(InputType.TYPE_CLASS_TEXT);
+        contenedor.addView(inputNombre);
+
+        EditText inputCorreo = new EditText(this);
+        inputCorreo.setHint("Correo electrónico");
+        inputCorreo.setText(correoActual);
+        inputCorreo.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        contenedor.addView(inputCorreo);
 
         new AlertDialog.Builder(this)
-                .setTitle("Mi información")
-                .setMessage(
-                        "Nombre: " + (nombre.isEmpty() ? "—" : nombre)
-                                + "\nCorreo: "
-                                + (correo.isEmpty() ? "—" : correo)
-                )
-                .setPositiveButton("Cerrar", null)
+                .setTitle("Editar perfil")
+                .setView(contenedor)
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Guardar", (dialogo, cual) -> {
+                    String nombre = inputNombre.getText().toString().trim();
+                    String correo = inputCorreo.getText().toString().trim();
+
+                    if (nombre.isEmpty() || correo.isEmpty()) {
+                        Toast.makeText(this,
+                                "Completa nombre y correo.", Toast.LENGTH_SHORT)
+                                .show();
+                        return;
+                    }
+
+                    String accessToken = Sesion.accessToken(this);
+                    String usuarioId = Sesion.usuarioId(this);
+
+                    if (accessToken.isEmpty() || usuarioId.isEmpty()) {
+                        volverAlLogin();
+                        return;
+                    }
+
+                    SupabaseHelper.actualizarPerfil(
+                            accessToken,
+                            usuarioId,
+                            nombre,
+                            correo,
+                            new SupabaseHelper.AuthCallback() {
+                                @Override
+                                public void onSuccess(JSONObject respuesta) {
+                                    Sesion.guardarPerfil(
+                                            PerfilActivity.this, respuesta);
+                                    runOnUiThread(() -> mostrarDatos(
+                                            nombre, correo));
+                                    Toast.makeText(PerfilActivity.this,
+                                            "Perfil actualizado.",
+                                            Toast.LENGTH_SHORT).show();
+                                }
+
+                                @Override
+                                public void onError(String mensaje) {
+                                    Toast.makeText(PerfilActivity.this,
+                                            "No se pudo actualizar: " + mensaje,
+                                            Toast.LENGTH_LONG).show();
+                                }
+                            });
+                })
                 .show();
+    }
+
+    private void confirmarEliminarCuenta() {
+        new AlertDialog.Builder(this)
+                .setTitle("Eliminar cuenta")
+                .setMessage(
+                        "¿Estás seguro de que quieres eliminar tu cuenta? "
+                                + "Esta acción no se puede deshacer y se borrará "
+                                + "tu perfil y tu historial de favoritos.")
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Eliminar", (dialogo, cual) -> eliminarCuenta())
+                .show();
+    }
+
+    private void eliminarCuenta() {
+        String accessToken = Sesion.accessToken(this);
+        String usuarioId = Sesion.usuarioId(this);
+
+        if (accessToken.isEmpty() || usuarioId.isEmpty()) {
+            volverAlLogin();
+            return;
+        }
+
+        SupabaseHelper.eliminarPerfil(
+                accessToken,
+                usuarioId,
+                new SupabaseHelper.AuthCallback() {
+                    @Override
+                    public void onSuccess(JSONObject respuesta) {
+                        // El perfil público se borró; cerramos sesión local.
+                        Sesion.limpiar(PerfilActivity.this);
+                        volverAlLogin();
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        // Aunque falle el borrado remoto, cerramos sesión
+                        // local para no dejar al usuario colgado.
+                        Sesion.limpiar(PerfilActivity.this);
+                        volverAlLogin();
+                    }
+                });
     }
 
     private void confirmarCierre() {

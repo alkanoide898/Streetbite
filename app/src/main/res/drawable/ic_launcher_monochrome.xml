@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Version monocromatica para los iconos tematicos de Android 13+.
+    Solo se usa el canal alfa, por eso todo va en blanco.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:translateY="2">
+        <!-- Cuerpo con la ventana de atencion recortada -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M28,40 H60 A4,4 0 0 1 64,44 V67 H24 V44 A4,4 0 0 1 28,40 Z M30,47 H58 V58 H30 Z" />
+        <!-- Cabina con su ventana recortada -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M64,50 H74 L82,58 V67 H64 Z M68,53 H73 L77,58 H68 Z" />
+        <!-- Ruedas como anillos con buje -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M29.8,68 A8.2,8.2 0 1,0 46.2,68 A8.2,8.2 0 1,0 29.8,68 Z M31.8,68 A6.2,6.2 0 1,0 44.2,68 A6.2,6.2 0 1,0 31.8,68 Z M35.6,68 A2.4,2.4 0 1,0 40.4,68 A2.4,2.4 0 1,0 35.6,68 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillType="evenOdd"
+            android:pathData="M63.8,68 A8.2,8.2 0 1,0 80.2,68 A8.2,8.2 0 1,0 63.8,68 Z M65.8,68 A6.2,6.2 0 1,0 78.2,68 A6.2,6.2 0 1,0 65.8,68 Z M69.6,68 A2.4,2.4 0 1,0 74.4,68 A2.4,2.4 0 1,0 69.6,68 Z" />
+        <!-- Chimenea -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M47,37 H57 V40 H47 Z" />
+        <!-- Vapor -->
+        <path
+            android:pathData="M50,35 C48,33 52,31 50,28"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="1.8" />
+        <path
+            android:pathData="M54,35 C52,33 56,31 54,28"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeWidth="1.8" />
+    </group>
+</vector>
