@@ -431,6 +431,16 @@ de Supabase (`streetbite://login-callback`).
 Suele ser por **Confirm email** activado. Desactivarlo o confirmar el correo
 antes de iniciar sesión.
 
+### El registro falla con "Database error saving new user"
+
+El error viene de Supabase, no de la app: significa que falló el trigger
+`on_auth_user_created` al crear el perfil. La solución es volver a ejecutar
+`supabase/usuarios.sql` en el SQL Editor: la función `crear_perfil_usuario()`
+ahora comprueba si la fila existe antes de insertar y, si falla, deja crear la
+cuenta de todos modos (el perfil se completa al iniciar sesión). En
+Supabase > Logs se puede ver el aviso `StreetBite: no se pudo crear el perfil`
+con el motivo concreto si el problema persiste.
+
 ### Las fotos no aparecen en la app
 
 Falta aplicar la migración de `supabase/foodtrucks.sql` (columnas `logo` y
@@ -464,6 +474,15 @@ perfiles de otros usuarios.
 ---
 
 ## Historial de cambios
+
+### 2026-11-17 — El registro ya no depende del trigger del perfil
+
+- El trigger `on_auth_user_created` podía devolver "Database error saving new
+  user" y bloquear el alta de cuentas nuevas.
+- Ahora comprueba si la fila existe antes de insertar, no depende de un índice
+  único concreto y captura cualquier error para no frenar el registro.
+- La app sigue creando/completando el perfil al iniciar sesión, así que el alta
+  queda protegida aunque falle la creación del perfil público.
 
 ### 2026-11-17 — Eliminar cuenta borra también Auth
 

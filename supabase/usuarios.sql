@@ -82,21 +82,35 @@ create or replace function public.crear_perfil_usuario()
 returns trigger
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, auth
 as $$
 begin
-    insert into public.usuarios (usuario_id, nombre, correo)
-    values (
-        new.id,
-        coalesce(
-            nullif(new.raw_user_meta_data ->> 'full_name', ''),
-            nullif(new.raw_user_meta_data ->> 'name', ''),
-            split_part(new.email, '@', 1)
-        ),
-        new.email
-    )
-    on conflict (usuario_id) do nothing;
+    -- Se comprueba la fila antes de insertar para no depender de un indice
+    -- unico concreto: si falta, el registro no debe quedar bloqueado.
+    if not exists (
+        select 1 from public.usuarios where usuario_id = new.id
+    ) then
+        insert into public.usuarios (usuario_id, nombre, correo)
+        values (
+            new.id,
+            coalesce(
+                nullif(trim(coalesce(
+                    new.raw_user_meta_data ->> 'full_name', '')), ''),
+                nullif(trim(coalesce(
+                    new.raw_user_meta_data ->> 'name', '')), ''),
+                nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
+                'Usuario'
+            ),
+            coalesce(new.email, '')
+        );
+    end if;
 
+    return new;
+exception when others then
+    -- Un problema del perfil publico nunca debe impedir crear la cuenta.
+    -- La app completa el perfil al iniciar sesion.
+    raise notice 'StreetBite: no se pudo crear el perfil de %: %',
+        new.id, sqlerrm;
     return new;
 end;
 $$;
