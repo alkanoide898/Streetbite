@@ -369,12 +369,15 @@ sesión abierta para que se pueda reintentar.
     frecuencia corta (como un "pop"), ataque de 3 ms y fundido a cero en la
     cola. Sin armónicos fuertes ni barrido largo, que sonaban metálicos.
   - `transicion.wav` — soplido aireado al abrir una pantalla: 300 ms de ruido
-    filtrado cuyo corte sube y baja, más un brillo tenue. Va más suave que el
-    toque para no competir con él.
+    filtrado con dos polos (12 dB/oct) y corte máximo de 1100 Hz, más un brillo
+    tenue. Va más suave que el toque para no competir con él.
 - `BaseActivity.onCreate()` reproduce la transición en cada pantalla; el splash
   la tiene desactivada (`suenaTransicion()`) para no sonar dos veces al arrancar.
-- Si se toca rápido, el sonido nuevo reemplaza al anterior en vez de sumarse:
-  no se escuchan dos a la vez ni se distorsiona.
+- **Cada efecto respeta un intervalo mínimo igual a su duración** (60 ms el
+  toque, 300 ms la transición). Así nunca se solapan dos veces y nunca se corta
+  uno a mitad, que es lo que produce un clic audible y suena a distorsión.
+- La transición se retrasa 95 ms respecto al toque: al navegar suenan en
+  secuencia y no como un doble golpe.
 - El sonido se programa al bajar el dedo y se cancela si el gesto se convierte
   en scroll. No depende de que el toque dure poco ni de que el dedo se mantenga
   quieto.
@@ -513,6 +516,19 @@ perfiles de otros usuarios.
 ---
 
 ## Historial de cambios
+
+### 2026-11-18 — Sin sonidos dobles ni cortes audibles
+
+- Se dejó de cortar los sonidos con `SoundPool.stop()`: cortar a mitad de un
+  efecto generaba un clic que se escuchaba como distorsión. Ahora cada efecto
+  espera a terminar antes de admitir el siguiente, con un intervalo mínimo
+  igual a su duración (60 ms el toque, 300 ms la transición).
+- La transición se retrasa 95 ms respecto al toque del botón: al navegar ya no
+  suenan los dos al mismo tiempo, que era lo que se percibía como un doble.
+- `transicion.wav` se regeneró con un filtro de dos polos y un corte más bajo
+  (1600 → 1100 Hz): se fue de un siseo de ~1600 Hz a un soplo de ~747 Hz.
+- Se midió el audio del emulador: cero underruns y carga moderada, así que la
+  distorsión no venía del búfer de audio.
 
 ### 2026-11-17 — Sonido de transición entre pantallas
 

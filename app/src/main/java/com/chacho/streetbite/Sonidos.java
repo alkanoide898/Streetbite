@@ -4,6 +4,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.AudioAttributes;
 import android.media.SoundPool;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 
 /**
  * Efectos de sonido de la interfaz.
@@ -13,9 +16,15 @@ import android.media.SoundPool;
  * - {@link #tocar(Context)}: toque suave para botones, chips y tarjetas.
  * - {@link #transicion(Context)}: soplido aireado al abrir una pantalla.
  *
- * SoundPool.load() es asíncrono, así que se espera a que termine antes de
- * reproducir. Sin esa espera, el primer toque después de abrir la app se
- * quedaba sin sonido y se sentía como un retardo.
+ * Tres reglas evitan que se escuchen dobles o distorsionados:
+ *
+ * 1. Cada efecto respeta un intervalo mínimo igual a su duración. Así nunca
+ *    se solapan dos veces y nunca se corta uno a mitad, que es lo que
+ *    produce un clic audible.
+ * 2. La transición empieza un poco después del toque, para que al navegar no
+ *    suenen los dos golpes al mismo tiempo.
+ * 3. SoundPool.load() es asíncrono, así que se espera a que termine antes de
+ *    reproducir; sin eso el primer toque se quedaba sin sonido.
  */
 public final class Sonidos {
 
@@ -25,15 +34,32 @@ public final class Sonidos {
     // El toque es corto y destaca; el soplido dura más y va más suave para
     // que no compita con el toque ni con el video.
     private static final float VOLUMEN_TOQUE = 0.85f;
-    private static final float VOLUMEN_TRANSICION = 0.65f;
+    private static final float VOLUMEN_TRANSICION = 0.6f;
+
+    /** tap.wav dura 58 ms: antes de eso no entra otro toque. */
+    private static final long INTERVALO_TOQUE_MS = 60L;
+
+    /** transicion.wav dura 300 ms: antes de eso no entra otra transición. */
+    private static final long INTERVALO_TRANSICION_MS = 300L;
+
+    /**
+     * La transición se retrasa para que termine el toque del botón. Si suenan
+     * juntos, el usuario escucha dos golpes y lo percibe como un sonido doble.
+     */
+    private static final long RETARDO_TRANSICION_MS = 95L;
+
+    private static final Handler manejador =
+            new Handler(Looper.getMainLooper());
 
     private static SoundPool pool;
     private static int idToque;
     private static int idTransicion;
-    private static int streamToque;
-    private static int streamTransicion;
     private static volatile boolean toqueListo;
     private static volatile boolean transicionLista;
+
+    private static long ultimoToque;
+    private static long ultimaTransicion;
+    private static Runnable transicionPendiente;
 
     private Sonidos() {
         // Evita crear instancias de esta clase.
@@ -79,7 +105,13 @@ public final class Sonidos {
         idTransicion = pool.load(app, R.raw.transicion, 1);
     }
 
-    /** Toque suave de botón, chip o tarjeta. */
+    /**
+     * Toque suave de botón, chip o tarjeta.
+     *
+     * Si llega otro toque antes de terminar el anterior, se ignora: es un
+     * rebote del dedo o un doble toque demasiado rápido para percibirse como
+     * dos acciones, y reproducirlo haría que se escuchara doble.
+     */
     public static void tocar(Context contexto) {
         if (!estaActivo(contexto)) {
             return;
@@ -87,19 +119,25 @@ public final class Sonidos {
 
         iniciar(contexto);
 
-        if (toqueListo && idToque != 0) {
-            // Si se toca rápido, el sonido nuevo reemplaza al anterior en vez
-            // de sumarse: así no se escucha doble ni se distorsiona.
-            if (streamToque != 0) {
-                pool.stop(streamToque);
-            }
+        long ahora = SystemClock.uptimeMillis();
 
-            streamToque = pool.play(
-                    idToque, VOLUMEN_TOQUE, VOLUMEN_TOQUE, 1, 0, 1f);
+        if (ahora - ultimoToque < INTERVALO_TOQUE_MS) {
+            return;
+        }
+
+        if (toqueListo && idToque != 0) {
+            ultimoToque = ahora;
+            pool.play(idToque, VOLUMEN_TOQUE, VOLUMEN_TOQUE, 1, 0, 1f);
         }
     }
 
-    /** Soplido suave al abrir una pantalla. */
+    /**
+     * Soplido suave al abrir una pantalla.
+     *
+     * Se reproduce unos milisegundos después del toque y respeta un intervalo
+     * mínimo: así no se solapa con el toque ni se corta a mitad si se navega
+     * rápido.
+     */
     public static void transicion(Context contexto) {
         if (!estaActivo(contexto)) {
             return;
@@ -107,16 +145,34 @@ public final class Sonidos {
 
         iniciar(contexto);
 
-        if (transicionLista && idTransicion != 0) {
-            // Pantallas que cambian rápido no apilan el soplido.
-            if (streamTransicion != 0) {
-                pool.stop(streamTransicion);
+        final Context app = contexto.getApplicationContext();
+
+        // Solo queda una transición en vuelo: la anterior se descarta.
+        if (transicionPendiente != null) {
+            manejador.removeCallbacks(transicionPendiente);
+        }
+
+        transicionPendiente = () -> {
+            transicionPendiente = null;
+
+            if (!estaActivo(app)) {
+                return;
             }
 
-            streamTransicion = pool.play(
-                    idTransicion, VOLUMEN_TRANSICION, VOLUMEN_TRANSICION,
-                    1, 0, 1f);
-        }
+            long ahora = SystemClock.uptimeMillis();
+
+            if (ahora - ultimaTransicion < INTERVALO_TRANSICION_MS) {
+                return;
+            }
+
+            if (transicionLista && idTransicion != 0) {
+                ultimaTransicion = ahora;
+                pool.play(idTransicion, VOLUMEN_TRANSICION,
+                        VOLUMEN_TRANSICION, 1, 0, 1f);
+            }
+        };
+
+        manejador.postDelayed(transicionPendiente, RETARDO_TRANSICION_MS);
     }
 
     public static boolean estaActivo(Context contexto) {
