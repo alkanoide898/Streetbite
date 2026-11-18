@@ -107,14 +107,12 @@ public class MainActivity extends BaseActivity {
     protected void animarEntrada() {
         View logo = findViewById(R.id.imgLogoLogin);
 
-        Animaciones.caerDesdeArriba(
+        Animaciones.caerLogoDesdeArriba(
                 logo,
                 findViewById(R.id.txtStreetBite),
                 findViewById(R.id.txtDescripcion),
                 findViewById(R.id.cardLogin),
                 findViewById(R.id.filaRegistro));
-
-        Animaciones.giroAlCaer(logo, -14f);
     }
 
     private void iniciarSesionDiscord() {

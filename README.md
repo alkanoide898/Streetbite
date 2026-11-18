@@ -392,13 +392,15 @@ sesión abierta para que se pueda reintentar.
 - **Login y registro**: todo el contenido cae desde arriba en cascada. El logo
   entra primero (con un giro leve al aterrizar), luego el título, la
   descripción, la tarjeta y el enlace de registro. Cada bloque cae desde fuera
-  de la pantalla, rebota un poco y se queda en su sitio: 720 ms de duración y
-  95 ms entre bloques (70 ms en el registro).
+  de la pantalla, rebota un poco y se queda en su sitio: 460 ms de duración,
+  70 dp de recorrido y 60 ms entre bloques (45 ms en el registro).
 - **Entrada del resto de pantallas**: los bloques principales suben suavemente
-  con un pequeño rebote y fade escalonado (520 ms, 75 ms entre bloques).
+  con un pequeño rebote y fade escalonado (360 ms, 20 dp y 45 ms entre bloques).
   Splash, detalle y visor de fotos tienen animación propia y no la usan.
-- Las vistas se promueven a capa de hardware mientras se mueven y se liberan al
-  terminar, para que no se redibujen en cada frame y el movimiento sea fluido.
+- Se usa el animador propio de cada vista (`ViewPropertyAnimator`), que mueve y
+  difumina por el hilo de renderizado. No se crean capas grandes ni animadores
+  por separado, para que la fluidez no dependa de que el emulador tenga mucha
+  memoria.
 - **Entrada escalonada**: las primeras 6 tarjetas aparecen con fade y una subida
   de 14 dp, con 55 ms de retraso entre una y otra.
 - **Feedback al presionar**: las tarjetas se encogen al 97 % y vuelven con un
@@ -537,9 +539,9 @@ perfiles de otros usuarios.
   el mismo efecto con un ritmo más corto.
 - El resto de pantallas entra con una subida escalonada y fade desde
   `BaseActivity`. Splash, detalle y visor de fotos conservan sus animaciones.
-- Las vistas se dibujan en una capa de hardware mientras se animan y se libera
-  al terminar. Medido en el emulador con el proceso caliente: caída completa
-  en 1,16 s, sin avisos de frames saltados.
+- Versión aligerada: 460 ms y 70 dp en la caída, 360 ms y 20 dp en la entrada,
+  con un solo animador por vista (el nativo) y sin capas de hardware. Así se ve
+  bien incluso en emuladores con pocos núcleos y poca memoria libre.
 
 ### 2026-11-18 — Sin sonidos dobles ni cortes audibles
 

@@ -162,7 +162,7 @@ public class RegistroActivity extends BaseActivity {
     @Override
     protected void animarEntrada() {
         Animaciones.caerDesdeArriba(
-                70L,
+                45L,
                 findViewById(R.id.txtTituloRegistro),
                 findViewById(R.id.txtDescripcionRegistro),
                 findViewById(R.id.edtNombre),
