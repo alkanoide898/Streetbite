@@ -44,6 +44,12 @@ public class SplashActivity extends BaseActivity {
     private boolean yaNavego = false;
     private Class<?> destino = null;
 
+    /** El splash no suena: la primera pantalla que se abre ya lo hace. */
+    @Override
+    protected boolean suenaTransicion() {
+        return false;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         SplashScreen.installSplashScreen(this);

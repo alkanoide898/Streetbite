@@ -78,7 +78,7 @@ app/src/main/java/com/chacho/streetbite/
 
 app/src/main/res/layout/         # pantallas e ítems de lista
 app/src/main/res/drawable-nodpi/ # logos y fotos de menú de los locales
-app/src/main/res/raw/            # tap.wav y tarjeta.wav
+app/src/main/res/raw/            # tap.wav, transicion.wav y el video
 supabase/                        # scripts SQL y datos de los locales
 ```
 
@@ -363,9 +363,16 @@ sesión abierta para que se pueda reintentar.
 - Los botones de los cuadros de diálogo están en otra ventana y no pasan por
   ahí, así que `sonarBotonesDelDialogo()` les aplica el mismo efecto después de
   mostrar el diálogo.
-- **Hay un solo sonido para toda la app**: `tap.wav`, un tono puro de 660 Hz de
-  60 ms, con ataque de 3 ms y fundido a cero en la cola. No tiene armónicos ni
-  barrido de frecuencia, que eran los que lo hacían sonar metálico y doble.
+- **Hay dos efectos** y el interruptor de **Perfil → Configuración** controla
+  ambos:
+  - `tap.wav` — toque suave de botón: 58 ms, tono cálido con una caída de
+    frecuencia corta (como un "pop"), ataque de 3 ms y fundido a cero en la
+    cola. Sin armónicos fuertes ni barrido largo, que sonaban metálicos.
+  - `transicion.wav` — soplido aireado al abrir una pantalla: 300 ms de ruido
+    filtrado cuyo corte sube y baja, más un brillo tenue. Va más suave que el
+    toque para no competir con él.
+- `BaseActivity.onCreate()` reproduce la transición en cada pantalla; el splash
+  la tiene desactivada (`suenaTransicion()`) para no sonar dos veces al arrancar.
 - Si se toca rápido, el sonido nuevo reemplaza al anterior en vez de sumarse:
   no se escuchan dos a la vez ni se distorsiona.
 - El sonido se programa al bajar el dedo y se cancela si el gesto se convierte
@@ -506,6 +513,17 @@ perfiles de otros usuarios.
 ---
 
 ## Historial de cambios
+
+### 2026-11-17 — Sonido de transición entre pantallas
+
+- Se creó `transicion.wav`, un soplido suave de 300 ms que suena al abrir una
+  pantalla nueva. Va más suave que el toque para no taparlo.
+- `BaseActivity.onCreate()` lo reproduce en todas las pantallas; el splash lo
+  desactiva para que no haya dos transiciones seguidas al arrancar.
+- `tap.wav` se rehizo como un "pop" cálido de 58 ms con caída de frecuencia
+  corta, para que se escuche suave y no metálico.
+- `Sonidos.java` ahora maneja dos efectos con streams separados, así el toque y
+  la transición no se cortan entre sí.
 
 ### 2026-11-17 — Sonido sin dobles ni distorsión
 

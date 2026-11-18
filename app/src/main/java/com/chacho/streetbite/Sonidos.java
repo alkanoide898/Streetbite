@@ -6,10 +6,12 @@ import android.media.AudioAttributes;
 import android.media.SoundPool;
 
 /**
- * Efecto de sonido de la interfaz.
+ * Efectos de sonido de la interfaz.
  *
- * Hay un solo sonido para toda la app: el mismo en botones, chips, tarjetas y
- * navegación. Así el feedback es uniforme y no depende de dónde se toque.
+ * Hay dos efectos y comparten un mismo SoundPool:
+ *
+ * - {@link #tocar(Context)}: toque suave para botones, chips y tarjetas.
+ * - {@link #transicion(Context)}: soplido aireado al abrir una pantalla.
  *
  * SoundPool.load() es asíncrono, así que se espera a que termine antes de
  * reproducir. Sin esa espera, el primer toque después de abrir la app se
@@ -20,20 +22,25 @@ public final class Sonidos {
     private static final String PREFS = "StreetBiteSonidos";
     private static final String CLAVE_ACTIVO = "activos";
 
-    // El archivo ya es suave: el volumen lo deja audible sin ser molesto.
-    private static final float VOLUMEN = 0.85f;
+    // El toque es corto y destaca; el soplido dura más y va más suave para
+    // que no compita con el toque ni con el video.
+    private static final float VOLUMEN_TOQUE = 0.85f;
+    private static final float VOLUMEN_TRANSICION = 0.65f;
 
     private static SoundPool pool;
-    private static int idTap;
-    private static int streamActual;
-    private static volatile boolean listo;
+    private static int idToque;
+    private static int idTransicion;
+    private static int streamToque;
+    private static int streamTransicion;
+    private static volatile boolean toqueListo;
+    private static volatile boolean transicionLista;
 
     private Sonidos() {
         // Evita crear instancias de esta clase.
     }
 
     /**
-     * Carga el sonido en memoria. Se llama al crear cada Activity, pero solo
+     * Carga los efectos en memoria. Se llama al crear cada Activity, pero solo
      * la primera vez hace trabajo real.
      */
     public static synchronized void iniciar(Context contexto) {
@@ -49,21 +56,30 @@ public final class Sonidos {
                 .build();
 
         pool = new SoundPool.Builder()
-                // Varios toques seguidos no deben cortarse entre sí.
-                .setMaxStreams(8)
+                // Un toque y una transición a la vez, sin cortes entre sí.
+                .setMaxStreams(4)
                 .setAudioAttributes(atributos)
                 .build();
 
         pool.setOnLoadCompleteListener((soundPool, id, estado) -> {
-            if (estado == 0 && id == idTap) {
-                listo = true;
+            if (estado != 0) {
+                return;
+            }
+
+            if (id == idToque) {
+                toqueListo = true;
+            }
+
+            if (id == idTransicion) {
+                transicionLista = true;
             }
         });
 
-        idTap = pool.load(app, R.raw.tap, 1);
+        idToque = pool.load(app, R.raw.tap, 1);
+        idTransicion = pool.load(app, R.raw.transicion, 1);
     }
 
-    /** Reproduce el efecto, si el usuario no lo desactivó y ya está cargado. */
+    /** Toque suave de botón, chip o tarjeta. */
     public static void tocar(Context contexto) {
         if (!estaActivo(contexto)) {
             return;
@@ -71,14 +87,35 @@ public final class Sonidos {
 
         iniciar(contexto);
 
-        if (listo && idTap != 0) {
-            // Si el usuario toca rápido, un sonido nuevo reemplaza al anterior
-            // en vez de sumarse: así no se escucha doble ni se distorsiona.
-            if (streamActual != 0) {
-                pool.stop(streamActual);
+        if (toqueListo && idToque != 0) {
+            // Si se toca rápido, el sonido nuevo reemplaza al anterior en vez
+            // de sumarse: así no se escucha doble ni se distorsiona.
+            if (streamToque != 0) {
+                pool.stop(streamToque);
             }
 
-            streamActual = pool.play(idTap, VOLUMEN, VOLUMEN, 1, 0, 1f);
+            streamToque = pool.play(
+                    idToque, VOLUMEN_TOQUE, VOLUMEN_TOQUE, 1, 0, 1f);
+        }
+    }
+
+    /** Soplido suave al abrir una pantalla. */
+    public static void transicion(Context contexto) {
+        if (!estaActivo(contexto)) {
+            return;
+        }
+
+        iniciar(contexto);
+
+        if (transicionLista && idTransicion != 0) {
+            // Pantallas que cambian rápido no apilan el soplido.
+            if (streamTransicion != 0) {
+                pool.stop(streamTransicion);
+            }
+
+            streamTransicion = pool.play(
+                    idTransicion, VOLUMEN_TRANSICION, VOLUMEN_TRANSICION,
+                    1, 0, 1f);
         }
     }
 

@@ -59,6 +59,18 @@ public abstract class BaseActivity extends AppCompatActivity {
 
         toqueMinimo = ViewConfiguration.get(this).getScaledTouchSlop();
         Sonidos.iniciar(this);
+
+        if (suenaTransicion()) {
+            Sonidos.transicion(this);
+        }
+    }
+
+    /**
+     * Suena un soplido al abrir cada pantalla. El splash lo desactiva para que
+     * no se escuchen dos transiciones seguidas al arrancar la app.
+     */
+    protected boolean suenaTransicion() {
+        return true;
     }
 
     @Override
