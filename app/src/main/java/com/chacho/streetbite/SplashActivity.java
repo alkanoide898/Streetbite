@@ -50,6 +50,12 @@ public class SplashActivity extends BaseActivity {
         return false;
     }
 
+    /** El splash ya tiene su propia animación de logo, pulsos y puntos. */
+    @Override
+    protected void animarEntrada() {
+        // Sin animación de entrada genérica.
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         SplashScreen.installSplashScreen(this);

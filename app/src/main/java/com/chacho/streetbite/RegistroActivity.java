@@ -158,6 +158,21 @@ public class RegistroActivity extends BaseActivity {
         txtVolverLogin.setOnClickListener(v -> finish());
     }
 
+    /** El registro cae desde arriba con el mismo ritmo que el login. */
+    @Override
+    protected void animarEntrada() {
+        Animaciones.caerDesdeArriba(
+                70L,
+                findViewById(R.id.txtTituloRegistro),
+                findViewById(R.id.txtDescripcionRegistro),
+                findViewById(R.id.edtNombre),
+                findViewById(R.id.edtCorreoRegistro),
+                findViewById(R.id.edtPasswordRegistro),
+                findViewById(R.id.edtConfirmarPassword),
+                findViewById(R.id.btnRegistrar),
+                findViewById(R.id.txtVolverLogin));
+    }
+
     private void cambiarEstado(boolean habilitado, String texto) {
         btnRegistrar.setEnabled(habilitado);
         btnRegistrar.setText(texto);

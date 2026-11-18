@@ -15,6 +15,12 @@ import java.util.List;
 
 public class DetalleFoodtruckActivity extends BaseActivity {
 
+    /** La foto entra con una transición compartida desde la tarjeta. */
+    @Override
+    protected void animarEntrada() {
+        // Sin animación de entrada genérica.
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

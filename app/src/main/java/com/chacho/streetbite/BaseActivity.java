@@ -77,18 +77,49 @@ public abstract class BaseActivity extends AppCompatActivity {
     public void setContentView(int layoutResID) {
         super.setContentView(layoutResID);
         ajustarBarrasDelSistema();
+        animarEntrada();
     }
 
     @Override
     public void setContentView(View view) {
         super.setContentView(view);
         ajustarBarrasDelSistema();
+        animarEntrada();
     }
 
     @Override
     public void setContentView(View view, ViewGroup.LayoutParams params) {
         super.setContentView(view, params);
         ajustarBarrasDelSistema();
+        animarEntrada();
+    }
+
+    /**
+     * Entrada por defecto: los bloques principales suben suavemente con un
+     * leve rebote y se despliegan en cascada. Las pantallas con una animación
+     * propia la reemplazan (splash, login, detalle y visor de fotos).
+     */
+    protected void animarEntrada() {
+        ViewGroup contenido = findViewById(android.R.id.content);
+
+        if (contenido == null || contenido.getChildCount() == 0) {
+            return;
+        }
+
+        View raiz = contenido.getChildAt(0);
+
+        if (!(raiz instanceof ViewGroup)) {
+            return;
+        }
+
+        ViewGroup grupo = (ViewGroup) raiz;
+        View[] bloques = new View[grupo.getChildCount()];
+
+        for (int i = 0; i < bloques.length; i++) {
+            bloques[i] = grupo.getChildAt(i);
+        }
+
+        Animaciones.entrarDesdeAbajo(bloques);
     }
 
     /**

@@ -22,6 +22,12 @@ public class FotoActivity extends BaseActivity {
         return intent;
     }
 
+    /** El visor entra desde la foto del menú con transición compartida. */
+    @Override
+    protected void animarEntrada() {
+        // Sin animación de entrada genérica.
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

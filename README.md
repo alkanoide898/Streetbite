@@ -74,7 +74,8 @@ app/src/main/java/com/chacho/streetbite/
 ├── SupabaseConfig.java          # URL y publishable key
 ├── Sesion.java                  # tokens y sesión persistente
 ├── Sonidos.java                 # efectos de interfaz
-└── BaseActivity.java            # sonidos, insets y base común
+├── Animaciones.java             # entradas escalonadas de cada pantalla
+└── BaseActivity.java            # sonidos, animaciones, insets y base común
 
 app/src/main/res/layout/         # pantallas e ítems de lista
 app/src/main/res/drawable-nodpi/ # logos y fotos de menú de los locales
@@ -388,6 +389,16 @@ sesión abierta para que se pueda reintentar.
 
 ### Animaciones
 
+- **Login y registro**: todo el contenido cae desde arriba en cascada. El logo
+  entra primero (con un giro leve al aterrizar), luego el título, la
+  descripción, la tarjeta y el enlace de registro. Cada bloque cae desde fuera
+  de la pantalla, rebota un poco y se queda en su sitio: 720 ms de duración y
+  95 ms entre bloques (70 ms en el registro).
+- **Entrada del resto de pantallas**: los bloques principales suben suavemente
+  con un pequeño rebote y fade escalonado (520 ms, 75 ms entre bloques).
+  Splash, detalle y visor de fotos tienen animación propia y no la usan.
+- Las vistas se promueven a capa de hardware mientras se mueven y se liberan al
+  terminar, para que no se redibujen en cada frame y el movimiento sea fluido.
 - **Entrada escalonada**: las primeras 6 tarjetas aparecen con fade y una subida
   de 14 dp, con 55 ms de retraso entre una y otra.
 - **Feedback al presionar**: las tarjetas se encogen al 97 % y vuelven con un
@@ -516,6 +527,19 @@ perfiles de otros usuarios.
 ---
 
 ## Historial de cambios
+
+### 2026-11-18 — Animaciones de entrada más claras y fluidas
+
+- Nuevo `Animaciones.java`: animaciones nativas sin librerías externas. Respeta
+  el ajuste de “animaciones desactivadas” del sistema.
+- El login cae completo desde arriba en cascada: logo (con giro), título,
+  descripción, tarjeta y registro, con un rebote al aterrizar. El registro usa
+  el mismo efecto con un ritmo más corto.
+- El resto de pantallas entra con una subida escalonada y fade desde
+  `BaseActivity`. Splash, detalle y visor de fotos conservan sus animaciones.
+- Las vistas se dibujan en una capa de hardware mientras se animan y se libera
+  al terminar. Medido en el emulador con el proceso caliente: caída completa
+  en 1,16 s, sin avisos de frames saltados.
 
 ### 2026-11-18 — Sin sonidos dobles ni cortes audibles
 

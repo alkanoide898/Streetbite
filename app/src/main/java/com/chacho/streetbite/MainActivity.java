@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
 import android.util.Base64;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -95,6 +96,25 @@ public class MainActivity extends BaseActivity {
 
         // PROCESAR EL REGRESO DESDE DISCORD, SI CORRESPONDE
         procesarRetornoDiscord(getIntent());
+    }
+
+    /**
+     * En el login todo el contenido cae desde arriba: primero el logo, luego
+     * el título, la descripción, la tarjeta y el enlace de registro. El logo
+     * también gira un poco mientras aterriza.
+     */
+    @Override
+    protected void animarEntrada() {
+        View logo = findViewById(R.id.imgLogoLogin);
+
+        Animaciones.caerDesdeArriba(
+                logo,
+                findViewById(R.id.txtStreetBite),
+                findViewById(R.id.txtDescripcion),
+                findViewById(R.id.cardLogin),
+                findViewById(R.id.filaRegistro));
+
+        Animaciones.giroAlCaer(logo, -14f);
     }
 
     private void iniciarSesionDiscord() {
