@@ -31,22 +31,22 @@ public final class Sonidos {
     private static final String PREFS = "StreetBiteSonidos";
     private static final String CLAVE_ACTIVO = "activos";
 
-    // El toque es corto y destaca; el soplido dura más y va más suave para
-    // que no compita con el toque ni con el video.
-    private static final float VOLUMEN_TOQUE = 0.85f;
-    private static final float VOLUMEN_TRANSICION = 0.6f;
+    // El toque es seco y sutil; la transición es una nota suave y discreta
+    // para acompañar el cambio de pantalla sin estorbar.
+    private static final float VOLUMEN_TOQUE = 0.65f;
+    private static final float VOLUMEN_TRANSICION = 0.45f;
 
-    /** tap.wav dura 58 ms: antes de eso no entra otro toque. */
-    private static final long INTERVALO_TOQUE_MS = 60L;
+    /** tap.wav dura 28 ms: antes de 45 ms no entra otro toque. */
+    private static final long INTERVALO_TOQUE_MS = 45L;
 
-    /** transicion.wav dura 300 ms: antes de eso no entra otra transición. */
-    private static final long INTERVALO_TRANSICION_MS = 300L;
+    /** transicion.wav dura 140 ms: antes de 180 ms no entra otra transición. */
+    private static final long INTERVALO_TRANSICION_MS = 180L;
 
     /**
-     * La transición se retrasa para que termine el toque del botón. Si suenan
-     * juntos, el usuario escucha dos golpes y lo percibe como un sonido doble.
+     * La transición se retrasa un instante para que termine el toque del botón.
+     * Si suenan juntos, el usuario escucha dos golpes y lo percibe como doble.
      */
-    private static final long RETARDO_TRANSICION_MS = 95L;
+    private static final long RETARDO_TRANSICION_MS = 60L;
 
     private static final Handler manejador =
             new Handler(Looper.getMainLooper());

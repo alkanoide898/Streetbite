@@ -9,11 +9,24 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
+
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
 
 public class DetalleFoodtruckActivity extends BaseActivity {
+
+    private String foodtruckId;
+    private String nombreLocal;
+    private Favorito favoritoActual;
+
+    private TextView btnFavoritoDetalle;
+    private View bloqueFavoritoDetalle;
+    private TextView txtEtiquetaFavoritoDetalle;
+    private TextView txtNotaFavoritoDetalle;
 
     /** La foto entra con una transición compartida desde la tarjeta. */
     @Override
@@ -38,6 +51,11 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         TextView txtTelefonoDetalle = findViewById(R.id.txtTelefonoDetalle);
         TextView txtInstagramDetalle = findViewById(R.id.txtInstagramDetalle);
         TextView btnVolverDetalle = findViewById(R.id.btnVolverDetalle);
+        btnFavoritoDetalle = findViewById(R.id.btnFavoritoDetalle);
+        bloqueFavoritoDetalle = findViewById(R.id.bloqueFavoritoDetalle);
+        txtEtiquetaFavoritoDetalle = findViewById(R.id.txtEtiquetaFavoritoDetalle);
+        txtNotaFavoritoDetalle = findViewById(R.id.txtNotaFavoritoDetalle);
+        TextView btnEditarFavoritoDetalle = findViewById(R.id.btnEditarFavoritoDetalle);
         TextView txtMenuVacio = findViewById(R.id.txtMenuVacio);
         LinearLayout contenedorMenu = findViewById(R.id.contenedorMenu);
 
@@ -49,7 +67,9 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         }
 
         // Recibir datos
+        foodtruckId = getIntent().getStringExtra("id");
         String nombre = getIntent().getStringExtra("nombre");
+        nombreLocal = nombre;
         String descripcion = getIntent().getStringExtra("descripcion");
         String rating = getIntent().getStringExtra("rating");
         String distancia = getIntent().getStringExtra("distancia");
@@ -77,30 +97,37 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         }
         if (estado != null) {
             txtEstadoDetalle.setText(estado);
-            // Colorear estado según abierto/cerrado
-            if (estado.toLowerCase().contains("cerrado")) {
-                txtEstadoDetalle.setTextColor(0xFFD32F2F);
-            } else {
-                txtEstadoDetalle.setTextColor(0xFF4CAF50);
-            }
+            boolean cerrado = estado.toLowerCase().contains("cerrado");
+            int colorEstado = getColor(
+                    cerrado ? R.color.sb_rojo : R.color.sb_verde
+            );
+            txtEstadoDetalle.setTextColor(colorEstado);
+            txtEstadoDetalle.setBackgroundResource(
+                    cerrado
+                            ? R.drawable.bg_badge_cerrado
+                            : R.drawable.bg_badge_abierto
+            );
+            txtEstadoDetalle.setCompoundDrawableTintList(
+                    android.content.res.ColorStateList.valueOf(colorEstado)
+            );
         }
 
         mostrarLogo(imgDetalle, logo, imagen);
         configurarMenu(contenedorMenu, txtMenuVacio, menu, nombre);
 
         if (direccion != null && !direccion.trim().isEmpty()) {
-            txtDireccionDetalle.setText("📍 " + direccion);
+            txtDireccionDetalle.setText(direccion.trim());
             txtDireccionDetalle.setVisibility(View.VISIBLE);
         }
 
         if (horario != null && !horario.trim().isEmpty()) {
-            txtHorarioDetalle.setText("🕒 " + horario);
+            txtHorarioDetalle.setText(horario.trim());
             txtHorarioDetalle.setVisibility(View.VISIBLE);
         }
 
         if (telefono != null && !telefono.trim().isEmpty()) {
 
-            txtTelefonoDetalle.setText("📱 " + telefono);
+            txtTelefonoDetalle.setText(telefono.trim());
             txtTelefonoDetalle.setVisibility(View.VISIBLE);
 
             String digitos = telefono.replaceAll("[^0-9]", "");
@@ -120,7 +147,7 @@ public class DetalleFoodtruckActivity extends BaseActivity {
                 usuario = usuario.substring(1);
             }
 
-            txtInstagramDetalle.setText("📷 @" + usuario);
+            txtInstagramDetalle.setText("@" + usuario);
             txtInstagramDetalle.setVisibility(View.VISIBLE);
 
             if (!usuario.isEmpty()) {
@@ -135,6 +162,247 @@ public class DetalleFoodtruckActivity extends BaseActivity {
 
         // Volver
         btnVolverDetalle.setOnClickListener(v -> finish());
+
+        // Favorito (Crear / Leer / Actualizar / Eliminar)
+        btnFavoritoDetalle.setOnClickListener(v -> abrirDialogoFavorito());
+        btnEditarFavoritoDetalle.setOnClickListener(v -> abrirDialogoFavorito());
+        cargarEstadoFavorito();
+    }
+
+    private void cargarEstadoFavorito() {
+        String accessToken = Sesion.accessToken(this);
+        String usuarioId = Sesion.usuarioId(this);
+
+        if (accessToken.isEmpty()
+                || usuarioId.isEmpty()
+                || !Favorito.esUuidValido(foodtruckId)) {
+            actualizarVistaFavorito();
+            return;
+        }
+
+        SupabaseHelper.obtenerFavorito(
+                accessToken,
+                usuarioId,
+                foodtruckId,
+                new SupabaseHelper.FavoritoCallback() {
+                    @Override
+                    public void onSuccess(Favorito favorito) {
+                        runOnUiThread(() -> {
+                            favoritoActual = favorito;
+                            actualizarVistaFavorito();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        // Si falla o la tabla aún no existe, se deja el botón listo.
+                    }
+                }
+        );
+    }
+
+    private void abrirDialogoFavorito() {
+        String accessToken = Sesion.accessToken(this);
+        String usuarioId = Sesion.usuarioId(this);
+
+        if (accessToken.isEmpty() || usuarioId.isEmpty()) {
+            Toast.makeText(
+                    this,
+                    "Inicia sesión para guardar favoritos.",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        if (!Favorito.esUuidValido(foodtruckId)) {
+            Toast.makeText(
+                    this,
+                    "Conéctate a internet para sincronizar con Supabase antes de guardar.",
+                    Toast.LENGTH_LONG
+            ).show();
+            return;
+        }
+
+        DialogoFavorito.mostrarParaLocal(
+                this,
+                nombreLocal,
+                foodtruckId,
+                favoritoActual,
+                (idLocal, etiqueta, nota) -> {
+                    if (favoritoActual == null) {
+                        crearFavorito(accessToken, usuarioId, idLocal, etiqueta, nota);
+                    } else {
+                        actualizarFavorito(accessToken, favoritoActual.id, etiqueta, nota);
+                    }
+                },
+                () -> confirmarQuitarFavorito(accessToken)
+        );
+    }
+
+    private void crearFavorito(
+            String accessToken,
+            String usuarioId,
+            String idLocal,
+            String etiqueta,
+            String nota) {
+
+        SupabaseHelper.crearFavorito(
+                accessToken,
+                usuarioId,
+                idLocal,
+                etiqueta,
+                nota,
+                new SupabaseHelper.FavoritoCallback() {
+                    @Override
+                    public void onSuccess(Favorito creado) {
+                        runOnUiThread(() -> {
+                            favoritoActual = creado;
+                            actualizarVistaFavorito();
+                            Toast.makeText(
+                                    DetalleFoodtruckActivity.this,
+                                    "Guardado en tus favoritos.",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        runOnUiThread(() -> Toast.makeText(
+                                DetalleFoodtruckActivity.this,
+                                "No se pudo guardar: " + mensaje,
+                                Toast.LENGTH_LONG
+                        ).show());
+                    }
+                }
+        );
+    }
+
+    private void actualizarFavorito(
+            String accessToken,
+            String favoritoId,
+            String etiqueta,
+            String nota) {
+
+        SupabaseHelper.actualizarFavorito(
+                accessToken,
+                favoritoId,
+                etiqueta,
+                nota,
+                new SupabaseHelper.FavoritoCallback() {
+                    @Override
+                    public void onSuccess(Favorito actualizado) {
+                        runOnUiThread(() -> {
+                            if (actualizado != null) {
+                                favoritoActual = actualizado;
+                            }
+                            actualizarVistaFavorito();
+                            Toast.makeText(
+                                    DetalleFoodtruckActivity.this,
+                                    "Favorito actualizado.",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        runOnUiThread(() -> Toast.makeText(
+                                DetalleFoodtruckActivity.this,
+                                "No se pudo actualizar: " + mensaje,
+                                Toast.LENGTH_LONG
+                        ).show());
+                    }
+                }
+        );
+    }
+
+    private void confirmarQuitarFavorito(String accessToken) {
+        if (favoritoActual == null) {
+            return;
+        }
+
+        String local = nombreLocal == null || nombreLocal.trim().isEmpty()
+                ? "este local"
+                : nombreLocal.trim();
+
+        AlertDialog confirmacion = new AlertDialog.Builder(this)
+                .setTitle("Quitar de favoritos")
+                .setMessage("¿Quieres quitar a " + local + " de tus favoritos?")
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton(
+                        "Quitar",
+                        (d, w) -> eliminarFavorito(accessToken, favoritoActual.id)
+                )
+                .create();
+        confirmacion.show();
+        sonarBotonesDelDialogo(confirmacion);
+    }
+
+    private void eliminarFavorito(String accessToken, String favoritoId) {
+        SupabaseHelper.eliminarFavorito(
+                accessToken,
+                favoritoId,
+                new SupabaseHelper.AuthCallback() {
+                    @Override
+                    public void onSuccess(JSONObject respuesta) {
+                        runOnUiThread(() -> {
+                            favoritoActual = null;
+                            actualizarVistaFavorito();
+                            Toast.makeText(
+                                    DetalleFoodtruckActivity.this,
+                                    "Eliminado de tus favoritos.",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        runOnUiThread(() -> Toast.makeText(
+                                DetalleFoodtruckActivity.this,
+                                "No se pudo eliminar: " + mensaje,
+                                Toast.LENGTH_LONG
+                        ).show());
+                    }
+                }
+        );
+    }
+
+    private void actualizarVistaFavorito() {
+        if (favoritoActual == null) {
+            btnFavoritoDetalle.setText("Guardar");
+            btnFavoritoDetalle.setTextColor(0xFFFFFFFF);
+            btnFavoritoDetalle.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                    R.drawable.ic_heart_outline, 0, 0, 0
+            );
+            btnFavoritoDetalle.setCompoundDrawableTintList(
+                    android.content.res.ColorStateList.valueOf(0xFFFFFFFF)
+            );
+            bloqueFavoritoDetalle.setVisibility(View.GONE);
+            return;
+        }
+
+        int colorGuardado = getColor(R.color.sb_ambar);
+        btnFavoritoDetalle.setText("Guardado");
+        btnFavoritoDetalle.setTextColor(colorGuardado);
+        btnFavoritoDetalle.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                R.drawable.ic_heart_filled, 0, 0, 0
+        );
+        btnFavoritoDetalle.setCompoundDrawableTintList(
+                android.content.res.ColorStateList.valueOf(colorGuardado)
+        );
+        bloqueFavoritoDetalle.setVisibility(View.VISIBLE);
+        txtEtiquetaFavoritoDetalle.setText(
+                "En tus favoritos · " + favoritoActual.etiqueta
+        );
+
+        if (favoritoActual.nota.isEmpty()) {
+            txtNotaFavoritoDetalle.setVisibility(View.GONE);
+        } else {
+            txtNotaFavoritoDetalle.setText(favoritoActual.nota);
+            txtNotaFavoritoDetalle.setVisibility(View.VISIBLE);
+        }
     }
 
     /**

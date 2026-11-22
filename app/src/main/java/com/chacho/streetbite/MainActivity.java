@@ -9,6 +9,7 @@ import android.util.Base64;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -172,6 +173,33 @@ public class MainActivity extends BaseActivity {
         // Se limpia el intent para no procesar el mismo código dos veces
         // (por ejemplo, si la pantalla se recrea al rotar)
         setIntent(new Intent());
+
+        // 1) Retorno desde enlace de recuperación de contraseña (viene en #fragment)
+        String fragment = datos.getFragment();
+        if (fragment != null && !fragment.isEmpty()) {
+            Uri fragmentParams = Uri.parse("streetbite://callback?" + fragment);
+            String errorFragment = fragmentParams.getQueryParameter("error_description");
+            if (errorFragment == null) {
+                errorFragment = fragmentParams.getQueryParameter("error");
+            }
+            if (errorFragment != null && !errorFragment.isEmpty()) {
+                Toast.makeText(
+                        this,
+                        "No se pudo completar la recuperación: " + errorFragment,
+                        Toast.LENGTH_LONG
+                ).show();
+                return;
+            }
+
+            String tipo = fragmentParams.getQueryParameter("type");
+            String recoveryToken = fragmentParams.getQueryParameter("access_token");
+            if ("recovery".equals(tipo)
+                    && recoveryToken != null
+                    && !recoveryToken.isEmpty()) {
+                mostrarDialogoNuevaContrasena(recoveryToken);
+                return;
+            }
+        }
 
         String error = datos.getQueryParameter("error_description");
 
@@ -367,6 +395,116 @@ public class MainActivity extends BaseActivity {
                     dialogo.dismiss();
                     enviarRecuperacion(correo);
                 }));
+
+        dialogo.show();
+        sonarBotonesDelDialogo(dialogo);
+    }
+
+    private void mostrarDialogoNuevaContrasena(String recoveryAccessToken) {
+        float densidad = getResources().getDisplayMetrics().density;
+        int padH = Math.round(22 * densidad);
+        int padV = Math.round(12 * densidad);
+        int padCampo = Math.round(14 * densidad);
+
+        LinearLayout contenedor = new LinearLayout(this);
+        contenedor.setOrientation(LinearLayout.VERTICAL);
+        contenedor.setPadding(padH, padV, padH, padV / 2);
+
+        EditText edtNueva = new EditText(this);
+        edtNueva.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        edtNueva.setSingleLine(true);
+        edtNueva.setHint("Nueva contraseña (mínimo 6 caracteres)");
+        edtNueva.setBackgroundResource(R.drawable.bg_sb_input);
+        edtNueva.setTextColor(getColor(R.color.sb_marron));
+        edtNueva.setHintTextColor(getColor(R.color.sb_hint));
+        edtNueva.setPadding(padCampo, padCampo, padCampo, padCampo);
+        contenedor.addView(edtNueva);
+
+        EditText edtConfirmar = new EditText(this);
+        edtConfirmar.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        edtConfirmar.setSingleLine(true);
+        edtConfirmar.setHint("Repetir nueva contraseña");
+        edtConfirmar.setBackgroundResource(R.drawable.bg_sb_input);
+        edtConfirmar.setTextColor(getColor(R.color.sb_marron));
+        edtConfirmar.setHintTextColor(getColor(R.color.sb_hint));
+        edtConfirmar.setPadding(padCampo, padCampo, padCampo, padCampo);
+        LinearLayout.LayoutParams paramsConfirmar = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        paramsConfirmar.topMargin = Math.round(10 * densidad);
+        edtConfirmar.setLayoutParams(paramsConfirmar);
+        contenedor.addView(edtConfirmar);
+
+        AlertDialog dialogo = new AlertDialog.Builder(this)
+                .setTitle("Nueva contraseña")
+                .setMessage("Ingresa tu nueva contraseña para tu cuenta StreetBite.")
+                .setView(contenedor)
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Guardar", null)
+                .create();
+
+        dialogo.setOnShowListener(d -> {
+            Button btnGuardar = dialogo.getButton(AlertDialog.BUTTON_POSITIVE);
+            btnGuardar.setOnClickListener(v -> {
+                String nueva = edtNueva.getText().toString();
+                String confirmar = edtConfirmar.getText().toString();
+
+                if (nueva.length() < 6) {
+                    Toast.makeText(
+                            this,
+                            "La contraseña debe tener al menos 6 caracteres.",
+                            Toast.LENGTH_SHORT
+                    ).show();
+                    return;
+                }
+
+                if (!nueva.equals(confirmar)) {
+                    Toast.makeText(
+                            this,
+                            "Las contraseñas no coinciden.",
+                            Toast.LENGTH_SHORT
+                    ).show();
+                    return;
+                }
+
+                btnGuardar.setEnabled(false);
+                btnGuardar.setText("Guardando...");
+
+                SupabaseHelper.cambiarContrasenaAuth(
+                        recoveryAccessToken,
+                        nueva,
+                        new SupabaseHelper.AuthCallback() {
+                            @Override
+                            public void onSuccess(JSONObject respuesta) {
+                                runOnUiThread(() -> {
+                                    dialogo.dismiss();
+                                    Toast.makeText(
+                                            MainActivity.this,
+                                            "Contraseña actualizada. Ya puedes iniciar sesión.",
+                                            Toast.LENGTH_LONG
+                                    ).show();
+                                });
+                            }
+
+                            @Override
+                            public void onError(String mensaje) {
+                                runOnUiThread(() -> {
+                                    btnGuardar.setEnabled(true);
+                                    btnGuardar.setText("Guardar");
+                                    Toast.makeText(
+                                            MainActivity.this,
+                                            "No se pudo actualizar: " + mensaje,
+                                            Toast.LENGTH_LONG
+                                    ).show();
+                                });
+                            }
+                        }
+                );
+            });
+        });
 
         dialogo.show();
         sonarBotonesDelDialogo(dialogo);

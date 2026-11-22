@@ -5,24 +5,27 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
     android:clickable="true"
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground"
-    app:cardBackgroundColor="@android:color/white"
-    app:cardCornerRadius="18dp"
-    app:cardElevation="2dp"
-    app:cardUseCompatPadding="true">
+    app:cardBackgroundColor="@android:color/transparent"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:cardPreventCornerOverlap="false">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/bg_tarjeta_borde"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:padding="12dp">
 
         <ImageView
             android:id="@+id/imgFoodtruck"
-            android:layout_width="98dp"
-            android:layout_height="98dp"
+            android:layout_width="86dp"
+            android:layout_height="86dp"
             android:background="@drawable/bg_image"
             android:clipToOutline="true"
             android:contentDescription="@string/foodtruck_imagen"
@@ -33,35 +36,36 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:paddingStart="16dp"
-            android:paddingTop="14dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="14dp">
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/txtNombreFoodtruck"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:textColor="@color/sb_marron"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                tools:text="Taco Truck" />
+                tools:text="Las Mechadas de Mechita" />
 
             <TextView
                 android:id="@+id/txtDescripcionFoodtruck"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="3dp"
+                android:ellipsize="end"
+                android:maxLines="2"
                 android:textColor="@color/sb_texto_suave"
                 android:textSize="13sp"
-                tools:text="Tacos y comida mexicana" />
+                tools:text="Hamburguesas caseras de calidad." />
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -69,29 +73,51 @@
                     android:id="@+id/txtRatingFoodtruck"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:drawablePadding="4dp"
+                    android:gravity="center_vertical"
                     android:textColor="@color/sb_marron"
                     android:textSize="13sp"
-                    tools:text="⭐ 4,8" />
+                    android:textStyle="bold"
+                    app:drawableStartCompat="@drawable/ic_star"
+                    app:drawableTint="@color/sb_ambar"
+                    tools:text="4.8" />
 
                 <TextView
                     android:id="@+id/txtDistanciaFoodtruck"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:textColor="@color/sb_marron"
-                    android:textSize="13sp"
-                    tools:text="📍 0,8 km" />
-            </LinearLayout>
+                    android:layout_marginStart="12dp"
+                    android:drawablePadding="3dp"
+                    android:gravity="center_vertical"
+                    android:textColor="@color/sb_texto_suave"
+                    android:textSize="12sp"
+                    app:drawableStartCompat="@drawable/ic_location"
+                    app:drawableTint="@color/sb_texto_suave"
+                    tools:text="0.8 km" />
 
-            <TextView
-                android:id="@+id/txtEstadoFoodtruck"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:textColor="#4CAF50"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                tools:text="● Abierto" />
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/txtEstadoFoodtruck"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_badge_abierto"
+                    android:drawablePadding="5dp"
+                    android:gravity="center_vertical"
+                    android:paddingStart="8dp"
+                    android:paddingTop="3dp"
+                    android:paddingEnd="9dp"
+                    android:paddingBottom="3dp"
+                    android:textColor="@color/sb_verde"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    app:drawableStartCompat="@drawable/ic_dot"
+                    app:drawableTint="@color/sb_verde"
+                    tools:text="Abierto" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

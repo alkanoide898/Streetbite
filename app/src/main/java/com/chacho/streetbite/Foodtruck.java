@@ -26,6 +26,11 @@ import java.util.Locale;
  */
 public class Foodtruck {
 
+    /** Centro de San Carlos, Ñuble y radio válido para distancias reales. */
+    public static final double SAN_CARLOS_LAT = -36.4248;
+    public static final double SAN_CARLOS_LON = -71.9581;
+    public static final float RADIO_SAN_CARLOS_METROS = 25000f;
+
     public final String id;
     public final String nombre;
     public final String descripcion;
@@ -214,17 +219,40 @@ public class Foodtruck {
     }
 
     public String ratingTexto() {
-        return String.format(Locale.getDefault(), "⭐ %.1f", rating);
+        return String.format(Locale.getDefault(), "%.1f", rating);
     }
 
     public String estadoTexto() {
-        return abierto ? "🟢 Abierto" : "🔴 Cerrado";
+        return abierto ? "Abierto" : "Cerrado";
+    }
+
+    /**
+     * Devuelve el GPS si está dentro de 25 km de San Carlos; si es nulo o está
+     * fuera (ej. emulador en otra ciudad/país), usa el centro de San Carlos.
+     */
+    public static Location ubicacionEnSanCarlos(Location gps) {
+        Location sanCarlos = new Location("sancarlos");
+        sanCarlos.setLatitude(SAN_CARLOS_LAT);
+        sanCarlos.setLongitude(SAN_CARLOS_LON);
+
+        if (gps == null) {
+            return sanCarlos;
+        }
+
+        float[] resultado = new float[1];
+        Location.distanceBetween(
+                gps.getLatitude(), gps.getLongitude(),
+                SAN_CARLOS_LAT, SAN_CARLOS_LON,
+                resultado
+        );
+
+        return resultado[0] <= RADIO_SAN_CARLOS_METROS ? gps : sanCarlos;
     }
 
     /** Distancia real entre el usuario y el foodtruck. Si no hay ubicación, muestra "--". */
     public String distanciaTexto(Location usuario) {
         if (usuario == null) {
-            return "📍 -- km";
+            return "-- km";
         }
 
         float[] resultado = new float[1];
@@ -237,10 +265,10 @@ public class Foodtruck {
         float metros = resultado[0];
 
         if (metros < 1000) {
-            return "📍 " + Math.round(metros) + " m";
+            return Math.round(metros) + " m";
         }
 
-        return String.format(Locale.getDefault(), "📍 %.1f km", metros / 1000f);
+        return String.format(Locale.getDefault(), "%.1f km", metros / 1000f);
     }
 
     /** Busca por nombre, descripción o categoría, sin importar tildes ni mayúsculas. */

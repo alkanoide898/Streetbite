@@ -2,8 +2,8 @@ package com.chacho.streetbite;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 /**
  * Visor de una foto del menú a pantalla completa.
@@ -34,7 +34,7 @@ public class FotoActivity extends BaseActivity {
         setContentView(R.layout.activity_foto);
 
         ImageView imagen = findViewById(R.id.imgFoto);
-        TextView cerrar = findViewById(R.id.btnCerrarFoto);
+        View cerrar = findViewById(R.id.btnCerrarFoto);
 
         String foto = getIntent().getStringExtra("foto");
         String nombreLocal = getIntent().getStringExtra("nombre");

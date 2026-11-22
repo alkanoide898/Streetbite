@@ -95,9 +95,9 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     /**
-     * Entrada por defecto: los bloques principales suben suavemente con un
-     * leve rebote y se despliegan en cascada. Las pantallas con una animación
-     * propia la reemplazan (splash, login, detalle y visor de fotos).
+     * Entrada por defecto: la pantalla completa entra sincronizada en un solo
+     * movimiento suave (fade + subida sutil), sin escalonamientos que causen
+     * tirones. Las pantallas con animación propia la reemplazan.
      */
     protected void animarEntrada() {
         ViewGroup contenido = findViewById(android.R.id.content);
@@ -106,20 +106,7 @@ public abstract class BaseActivity extends AppCompatActivity {
             return;
         }
 
-        View raiz = contenido.getChildAt(0);
-
-        if (!(raiz instanceof ViewGroup)) {
-            return;
-        }
-
-        ViewGroup grupo = (ViewGroup) raiz;
-        View[] bloques = new View[grupo.getChildCount()];
-
-        for (int i = 0; i < bloques.length; i++) {
-            bloques[i] = grupo.getChildAt(i);
-        }
-
-        Animaciones.entrarDesdeAbajo(bloques);
+        Animaciones.entrarDesdeAbajo(contenido.getChildAt(0));
     }
 
     /**

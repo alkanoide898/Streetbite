@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/sb_crema">
@@ -17,35 +18,199 @@
         android:layout_width="wrap_content"
         android:layout_height="42dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="18dp"
+        android:layout_marginTop="16dp"
         android:background="@drawable/bg_mapa_boton"
+        android:drawablePadding="6dp"
+        android:elevation="4dp"
         android:gravity="center"
-        android:paddingStart="16dp"
-        android:paddingEnd="18dp"
-        android:text="← Volver"
+        android:paddingStart="12dp"
+        android:paddingEnd="16dp"
+        android:text="Volver"
         android:textColor="@color/sb_marron"
         android:textSize="14sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        app:drawableStartCompat="@drawable/ic_arrow_back"
+        app:drawableTint="@color/sb_marron" />
+
+    <!-- TARJETA INFERIOR AL SELECCIONAR UN FOODTRUCK -->
+    <LinearLayout
+        android:id="@+id/cardDetalleMapa"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="16dp"
+        android:background="@drawable/bg_tarjeta_borde"
+        android:clickable="true"
+        android:elevation="8dp"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:padding="14dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/imgMapaFoodtruck"
+                android:layout_width="66dp"
+                android:layout_height="66dp"
+                android:background="@drawable/bg_image"
+                android:clipToOutline="true"
+                android:contentDescription="@string/foodtruck_imagen"
+                android:outlineProvider="background"
+                android:scaleType="centerCrop"
+                android:src="@drawable/tacos" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/txtMapaNombre"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/sb_marron"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    tools:text="Las Mechadas de Mechita" />
+
+                <TextView
+                    android:id="@+id/txtMapaDescripcion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:textColor="@color/sb_texto_suave"
+                    android:textSize="12sp"
+                    tools:text="Hamburguesas caseras de calidad." />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/txtMapaRating"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:drawablePadding="4dp"
+                        android:gravity="center_vertical"
+                        android:textColor="@color/sb_marron"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        app:drawableStartCompat="@drawable/ic_star"
+                        app:drawableTint="@color/sb_ambar"
+                        tools:text="5.0" />
+
+                    <TextView
+                        android:id="@+id/txtMapaDistancia"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:drawablePadding="3dp"
+                        android:gravity="center_vertical"
+                        android:textColor="@color/sb_texto_suave"
+                        android:textSize="12sp"
+                        app:drawableStartCompat="@drawable/ic_location"
+                        app:drawableTint="@color/sb_texto_suave"
+                        tools:text="0.9 km" />
+
+                    <TextView
+                        android:id="@+id/txtMapaEstado"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:background="@drawable/bg_badge_abierto"
+                        android:drawablePadding="5dp"
+                        android:gravity="center_vertical"
+                        android:paddingStart="8dp"
+                        android:paddingTop="2dp"
+                        android:paddingEnd="8dp"
+                        android:paddingBottom="2dp"
+                        android:textColor="@color/sb_verde"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        app:drawableStartCompat="@drawable/ic_dot"
+                        app:drawableTint="@color/sb_verde"
+                        tools:text="Abierto" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/btnCerrarTarjetaMapa"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="top"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Cerrar tarjeta"
+                android:padding="6dp"
+                android:src="@drawable/ic_close"
+                app:tint="@color/sb_texto_suave" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/txtMapaDireccion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:drawablePadding="6dp"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:textColor="@color/sb_texto_suave"
+            android:textSize="12sp"
+            app:drawableStartCompat="@drawable/ic_location"
+            app:drawableTint="@color/sb_naranja"
+            tools:text="Sector Alameda (carros)" />
+
+        <Button
+            android:id="@+id/btnVerDetalleMapa"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_boton_primario"
+            android:stateListAnimator="@null"
+            android:text="Ver menú y detalle"
+            android:textAllCaps="false"
+            android:textColor="@color/sb_texto_sobre_acento"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
 
     <!-- BOTÓN MI UBICACIÓN -->
     <androidx.cardview.widget.CardView
         android:id="@+id/btnMiUbicacion"
         android:layout_width="48dp"
         android:layout_height="48dp"
+        android:layout_above="@id/cardDetalleMapa"
+        android:layout_alignWithParentIfMissing="true"
         android:layout_alignParentEnd="true"
-        android:layout_alignParentBottom="true"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="26dp"
+        android:layout_marginBottom="16dp"
         android:foreground="?attr/selectableItemBackground"
-        app:cardBackgroundColor="@android:color/white"
+        app:cardBackgroundColor="@color/sb_superficie"
         app:cardCornerRadius="24dp"
         app:cardElevation="6dp">
 
         <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
             android:layout_gravity="center"
-            android:src="@android:drawable/ic_menu_mylocation"
+            android:contentDescription="Centrar en mi ubicación"
+            android:src="@drawable/ic_my_location"
             app:tint="@color/sb_naranja" />
     </androidx.cardview.widget.CardView>
 

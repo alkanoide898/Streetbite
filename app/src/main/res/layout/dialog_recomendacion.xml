@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_tarjeta_borde"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- CABECERA DEL MODAL -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_pill_naranja"
+            android:drawablePadding="6dp"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingTop="5dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="5dp"
+            android:text="Sugerencia para ti"
+            android:textColor="@color/sb_naranja"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:drawableStartCompat="@drawable/ic_shuffle"
+            app:drawableTint="@color/sb_naranja" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:id="@+id/btnCerrarRecomendacion"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Cerrar sugerencia"
+            android:padding="7dp"
+            android:src="@drawable/ic_close"
+            app:tint="@color/sb_texto_suave" />
+    </LinearLayout>
+
+    <!-- LOGO DEL FOODTRUCK -->
+    <ImageView
+        android:id="@+id/imgRecomendacionLogo"
+        android:layout_width="92dp"
+        android:layout_height="92dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_image"
+        android:clipToOutline="true"
+        android:contentDescription="@string/foodtruck_imagen"
+        android:outlineProvider="background"
+        android:scaleType="centerCrop"
+        android:src="@drawable/tacos" />
+
+    <!-- NOMBRE Y DESCRIPCIÓN -->
+    <TextView
+        android:id="@+id/txtRecomendacionNombre"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:ellipsize="end"
+        android:fontFamily="sans-serif-black"
+        android:gravity="center"
+        android:maxLines="2"
+        android:textColor="@color/sb_marron"
+        android:textSize="20sp"
+        tools:text="Las Mechadas de Mechita" />
+
+    <TextView
+        android:id="@+id/txtRecomendacionDescripcion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="2"
+        android:textColor="@color/sb_texto_suave"
+        android:textSize="13sp"
+        tools:text="Hamburguesas caseras de calidad." />
+
+    <!-- MÉTRICAS: RATING, DISTANCIA Y ESTADO -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/txtRecomendacionRating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:drawablePadding="4dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/sb_marron"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            app:drawableStartCompat="@drawable/ic_star"
+            app:drawableTint="@color/sb_ambar"
+            tools:text="5.0" />
+
+        <TextView
+            android:id="@+id/txtRecomendacionDistancia"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:drawablePadding="3dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/sb_texto_suave"
+            android:textSize="13sp"
+            app:drawableStartCompat="@drawable/ic_location"
+            app:drawableTint="@color/sb_texto_suave"
+            tools:text="0.9 km" />
+
+        <TextView
+            android:id="@+id/txtRecomendacionEstado"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:background="@drawable/bg_badge_abierto"
+            android:drawablePadding="5dp"
+            android:gravity="center_vertical"
+            android:paddingStart="9dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="9dp"
+            android:paddingBottom="3dp"
+            android:textColor="@color/sb_verde"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            app:drawableStartCompat="@drawable/ic_dot"
+            app:drawableTint="@color/sb_verde"
+            tools:text="Abierto" />
+    </LinearLayout>
+
+    <!-- DIRECCIÓN Y HORARIO -->
+    <LinearLayout
+        android:id="@+id/bloqueRecomendacionInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_info_pill"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/txtRecomendacionDireccion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawablePadding="8dp"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:textColor="@color/sb_marron"
+            android:textSize="12sp"
+            app:drawableStartCompat="@drawable/ic_location"
+            app:drawableTint="@color/sb_naranja"
+            tools:text="Sector Alameda (carros)" />
+
+        <TextView
+            android:id="@+id/txtRecomendacionHorario"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:drawablePadding="8dp"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:textColor="@color/sb_texto_suave"
+            android:textSize="12sp"
+            app:drawableStartCompat="@drawable/ic_clock"
+            app:drawableTint="@color/sb_texto_suave"
+            tools:text="12:00 - 00:00" />
+    </LinearLayout>
+
+    <!-- BOTONES -->
+    <Button
+        android:id="@+id/btnVerRecomendado"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="18dp"
+        android:background="@drawable/bg_boton_primario"
+        android:stateListAnimator="@null"
+        android:text="Ver menú y detalle"
+        android:textAllCaps="false"
+        android:textColor="@color/sb_texto_sobre_acento"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/btnOtroRecomendado"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_boton_borde"
+        android:stateListAnimator="@null"
+        android:text="Probar otro local"
+        android:textAllCaps="false"
+        android:textColor="@color/sb_naranja"
+        android:textSize="13sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="O vuelve a agitar el teléfono para cambiar"
+        android:textColor="@color/sb_hint"
+        android:textSize="11sp" />
+
+</LinearLayout>

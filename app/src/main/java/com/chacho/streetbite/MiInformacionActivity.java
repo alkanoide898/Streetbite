@@ -27,10 +27,13 @@ public class MiInformacionActivity extends BaseActivity {
 
     private EditText edtNombre;
     private EditText edtCorreo;
+    private EditText edtNuevaContrasena;
+    private EditText edtConfirmarContrasena;
     private TextView txtInicial;
     private TextView txtNombreActual;
     private TextView txtCorreoActual;
     private Button btnGuardar;
+    private Button btnCambiarContrasena;
 
     private String correoActual = "";
 
@@ -41,10 +44,13 @@ public class MiInformacionActivity extends BaseActivity {
 
         edtNombre = findViewById(R.id.edtNombreInformacion);
         edtCorreo = findViewById(R.id.edtCorreoInformacion);
+        edtNuevaContrasena = findViewById(R.id.edtNuevaContrasena);
+        edtConfirmarContrasena = findViewById(R.id.edtConfirmarContrasena);
         txtInicial = findViewById(R.id.txtInicialInformacion);
         txtNombreActual = findViewById(R.id.txtNombreActual);
         txtCorreoActual = findViewById(R.id.txtCorreoActual);
         btnGuardar = findViewById(R.id.btnGuardarInformacion);
+        btnCambiarContrasena = findViewById(R.id.btnCambiarContrasena);
 
         String nombre = getIntent().getStringExtra("nombre");
         String correo = getIntent().getStringExtra("correo");
@@ -72,6 +78,7 @@ public class MiInformacionActivity extends BaseActivity {
         findViewById(R.id.btnVolverInformacion).setOnClickListener(v -> finish());
         findViewById(R.id.btnCancelarInformacion).setOnClickListener(v -> finish());
         btnGuardar.setOnClickListener(v -> guardarCambios());
+        btnCambiarContrasena.setOnClickListener(v -> cambiarContrasena());
     }
 
     private void mostrarDatos(String nombre, String correo) {
@@ -288,6 +295,62 @@ public class MiInformacionActivity extends BaseActivity {
         btnGuardar.setText(habilitado
                 ? "Guardar cambios"
                 : "Guardando...");
+    }
+
+    private void cambiarContrasena() {
+        String nueva = edtNuevaContrasena.getText().toString();
+        String confirmar = edtConfirmarContrasena.getText().toString();
+
+        if (nueva.length() < 6) {
+            mostrarAviso("La nueva contraseña debe tener al menos 6 caracteres.");
+            return;
+        }
+
+        if (!nueva.equals(confirmar)) {
+            mostrarAviso("Las contraseñas no coinciden.");
+            return;
+        }
+
+        String accessToken = Sesion.accessToken(this);
+        if (accessToken.isEmpty()) {
+            volverAlLogin();
+            return;
+        }
+
+        btnCambiarContrasena.setEnabled(false);
+        btnCambiarContrasena.setText("Actualizando...");
+
+        SupabaseHelper.cambiarContrasenaAuth(
+                accessToken,
+                nueva,
+                new SupabaseHelper.AuthCallback() {
+                    @Override
+                    public void onSuccess(JSONObject respuesta) {
+                        runOnUiThread(() -> {
+                            btnCambiarContrasena.setEnabled(true);
+                            btnCambiarContrasena.setText("Actualizar contraseña");
+                            edtNuevaContrasena.setText("");
+                            edtConfirmarContrasena.setText("");
+                            Toast.makeText(
+                                    MiInformacionActivity.this,
+                                    "Contraseña actualizada.",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        runOnUiThread(() -> {
+                            btnCambiarContrasena.setEnabled(true);
+                            btnCambiarContrasena.setText("Actualizar contraseña");
+                            mostrarAviso(
+                                    "No se pudo cambiar la contraseña: " + mensaje
+                            );
+                        });
+                    }
+                }
+        );
     }
 
     private void mostrarAviso(String mensaje) {

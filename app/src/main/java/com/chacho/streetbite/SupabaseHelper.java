@@ -1,5 +1,6 @@
 package com.chacho.streetbite;
 
+import android.net.Uri;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -31,6 +32,9 @@ public final class SupabaseHelper {
     private static final String TAG = "SupabaseHelper";
 
     private static final String TABLA_USUARIOS = "/rest/v1/usuarios";
+    private static final String TABLA_FAVORITOS = "/rest/v1/favoritos";
+    private static final String CAMPOS_FAVORITO =
+            "id,usuario_id,foodtruck_id,etiqueta,nota,created_at,updated_at";
 
     // Columnas del catálogo. Las fotos reales se agregaron después, así que
     // existe una versión sin ellas para bases que todavía no se migraron.
@@ -70,6 +74,26 @@ public final class SupabaseHelper {
 
     public interface FoodtrucksCallback {
         void onSuccess(List<Foodtruck> foodtrucks);
+
+        void onError(String mensaje);
+
+        default void onSinConexion(String mensaje) {
+            onError(mensaje);
+        }
+    }
+
+    public interface FavoritosCallback {
+        void onSuccess(List<Favorito> favoritos);
+
+        void onError(String mensaje);
+
+        default void onSinConexion(String mensaje) {
+            onError(mensaje);
+        }
+    }
+
+    public interface FavoritoCallback {
+        void onSuccess(Favorito favorito);
 
         void onError(String mensaje);
 
@@ -175,7 +199,9 @@ public final class SupabaseHelper {
             JSONObject solicitud = new JSONObject();
             solicitud.put("email", correo);
 
-            enviarPeticionAuth("/auth/v1/recover", solicitud, callback);
+            String endpoint = "/auth/v1/recover?redirect_to="
+                    + Uri.encode("streetbite://login-callback");
+            enviarPeticionAuth(endpoint, solicitud, callback);
 
         } catch (Exception e) {
             callback.onError(
@@ -378,6 +404,36 @@ public final class SupabaseHelper {
 
         } catch (Exception e) {
             callback.onError("No se pudo preparar el cambio de correo.");
+        }
+    }
+
+    /**
+     * Cambia la contraseña de la cuenta en Supabase Auth (PUT /auth/v1/user).
+     * Sirve tanto con la sesión activa (desde Mi información) como con el
+     * access_token de recuperación que entrega el enlace del correo.
+     */
+    public static void cambiarContrasenaAuth(
+            String accessToken,
+            String nuevaContrasena,
+            AuthCallback callback) {
+
+        try {
+            JSONObject datos = new JSONObject();
+            datos.put("password", nuevaContrasena);
+
+            Request solicitud = new Request.Builder()
+                    .url(SupabaseConfig.SUPABASE_URL + "/auth/v1/user")
+                    .put(RequestBody.create(datos.toString(), JSON))
+                    .addHeader("apikey",
+                            SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .addHeader("Content-Type", "application/json")
+                    .build();
+
+            ejecutar(solicitud, callback);
+
+        } catch (Exception e) {
+            callback.onError("No se pudo preparar el cambio de contraseña.");
         }
     }
 
@@ -616,6 +672,266 @@ public final class SupabaseHelper {
     }
 
     // ============================================================
+    // FAVORITOS (PostgREST / tabla public.favoritos)
+    // ============================================================
+
+    /**
+     * Lista los favoritos del usuario autenticado, ordenados por última
+     * actualización. RLS garantiza que solo se devuelven sus propias filas.
+     */
+    public static void listarFavoritos(
+            String accessToken,
+            String usuarioId,
+            FavoritosCallback callback) {
+
+        String url = SupabaseConfig.SUPABASE_URL
+                + TABLA_FAVORITOS
+                + "?usuario_id=eq." + usuarioId
+                + "&select=" + CAMPOS_FAVORITO
+                + "&order=updated_at.desc";
+
+        Request solicitud = new Request.Builder()
+                .url(url)
+                .get()
+                .addHeader("apikey", SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .build();
+
+        CLIENT.newCall(solicitud).enqueue(new Callback() {
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e(TAG, "Error al cargar favoritos", e);
+                callback.onSinConexion(
+                        "No se pudo conectar con Supabase. "
+                                + "Revisa tu conexión."
+                );
+            }
+
+            @Override
+            public void onResponse(Call call, Response response)
+                    throws IOException {
+
+                try (Response respuesta = response) {
+                    String contenido = respuesta.body() != null
+                            ? respuesta.body().string()
+                            : "";
+
+                    if (!respuesta.isSuccessful()) {
+                        Log.w(
+                                TAG,
+                                "HTTP " + respuesta.code()
+                                        + " URL=" + solicitud.url()
+                                        + " body=" + contenido
+                        );
+                        callback.onError(
+                                mensajeError(
+                                        parsear(contenido),
+                                        respuesta.code()
+                                )
+                        );
+                        return;
+                    }
+
+                    List<Favorito> favoritos = new ArrayList<>();
+
+                    try {
+                        JSONArray arreglo = new JSONArray(contenido);
+
+                        for (int i = 0; i < arreglo.length(); i++) {
+                            Favorito favorito = Favorito.desdeJson(
+                                    arreglo.optJSONObject(i)
+                            );
+                            if (favorito != null) {
+                                favoritos.add(favorito);
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.w(TAG, "Respuesta de favoritos no válida", e);
+                        callback.onError(
+                                "No se pudieron leer tus favoritos."
+                        );
+                        return;
+                    }
+
+                    callback.onSuccess(favoritos);
+                }
+            }
+        });
+    }
+
+    /**
+     * Busca si el usuario ya guardó un foodtruck concreto en favoritos.
+     * Si no existe, entrega null en onSuccess.
+     */
+    public static void obtenerFavorito(
+            String accessToken,
+            String usuarioId,
+            String foodtruckId,
+            FavoritoCallback callback) {
+
+        String url = SupabaseConfig.SUPABASE_URL
+                + TABLA_FAVORITOS
+                + "?usuario_id=eq." + usuarioId
+                + "&foodtruck_id=eq." + foodtruckId
+                + "&select=" + CAMPOS_FAVORITO
+                + "&limit=1";
+
+        Request solicitud = new Request.Builder()
+                .url(url)
+                .get()
+                .addHeader("apikey", SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .build();
+
+        ejecutar(solicitud, new AuthCallback() {
+            @Override
+            public void onSuccess(JSONObject respuesta) {
+                callback.onSuccess(Favorito.desdeJson(respuesta));
+            }
+
+            @Override
+            public void onError(String mensaje) {
+                callback.onError(mensaje);
+            }
+
+            @Override
+            public void onSinConexion(String mensaje) {
+                callback.onSinConexion(mensaje);
+            }
+        });
+    }
+
+    /**
+     * Crea un nuevo favorito en public.favoritos con etiqueta y nota personal.
+     */
+    public static void crearFavorito(
+            String accessToken,
+            String usuarioId,
+            String foodtruckId,
+            String etiqueta,
+            String nota,
+            FavoritoCallback callback) {
+
+        try {
+            JSONObject datos = new JSONObject();
+            datos.put("usuario_id", usuarioId);
+            datos.put("foodtruck_id", foodtruckId);
+            datos.put(
+                    "etiqueta",
+                    etiqueta == null || etiqueta.trim().isEmpty()
+                            ? "Favorito"
+                            : etiqueta.trim()
+            );
+            datos.put("nota", nota == null ? "" : nota.trim());
+
+            Request solicitud = new Request.Builder()
+                    .url(SupabaseConfig.SUPABASE_URL + TABLA_FAVORITOS)
+                    .post(RequestBody.create(datos.toString(), JSON))
+                    .addHeader("apikey",
+                            SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("Prefer", "return=representation")
+                    .build();
+
+            ejecutar(solicitud, new AuthCallback() {
+                @Override
+                public void onSuccess(JSONObject respuesta) {
+                    callback.onSuccess(Favorito.desdeJson(respuesta));
+                }
+
+                @Override
+                public void onError(String mensaje) {
+                    callback.onError(mensaje);
+                }
+
+                @Override
+                public void onSinConexion(String mensaje) {
+                    callback.onSinConexion(mensaje);
+                }
+            });
+
+        } catch (Exception e) {
+            callback.onError("No se pudo preparar el favorito.");
+        }
+    }
+
+    /**
+     * Actualiza la etiqueta y la nota personal de un favorito existente.
+     */
+    public static void actualizarFavorito(
+            String accessToken,
+            String favoritoId,
+            String etiqueta,
+            String nota,
+            FavoritoCallback callback) {
+
+        try {
+            JSONObject datos = new JSONObject();
+            datos.put(
+                    "etiqueta",
+                    etiqueta == null || etiqueta.trim().isEmpty()
+                            ? "Favorito"
+                            : etiqueta.trim()
+            );
+            datos.put("nota", nota == null ? "" : nota.trim());
+
+            Request solicitud = new Request.Builder()
+                    .url(SupabaseConfig.SUPABASE_URL
+                            + TABLA_FAVORITOS
+                            + "?id=eq." + favoritoId)
+                    .patch(RequestBody.create(datos.toString(), JSON))
+                    .addHeader("apikey",
+                            SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("Prefer", "return=representation")
+                    .build();
+
+            ejecutar(solicitud, new AuthCallback() {
+                @Override
+                public void onSuccess(JSONObject respuesta) {
+                    callback.onSuccess(Favorito.desdeJson(respuesta));
+                }
+
+                @Override
+                public void onError(String mensaje) {
+                    callback.onError(mensaje);
+                }
+
+                @Override
+                public void onSinConexion(String mensaje) {
+                    callback.onSinConexion(mensaje);
+                }
+            });
+
+        } catch (Exception e) {
+            callback.onError("No se pudo preparar la actualización.");
+        }
+    }
+
+    /**
+     * Elimina un favorito propio por su id.
+     */
+    public static void eliminarFavorito(
+            String accessToken,
+            String favoritoId,
+            AuthCallback callback) {
+
+        Request solicitud = new Request.Builder()
+                .url(SupabaseConfig.SUPABASE_URL
+                        + TABLA_FAVORITOS
+                        + "?id=eq." + favoritoId)
+                .delete()
+                .addHeader("apikey", SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .build();
+
+        ejecutar(solicitud, callback);
+    }
+
+    // ============================================================
     // HTTP
     // ============================================================
 
@@ -737,6 +1053,16 @@ public final class SupabaseHelper {
 
         if (minusculas.contains("password should be at least")) {
             return "La contraseña es demasiado corta.";
+        }
+
+        if (minusculas.contains("favoritos_usuario_foodtruck_key")
+                || minusculas.contains("duplicate key value")) {
+            return "Este local ya está en tus favoritos.";
+        }
+
+        if (minusculas.contains("relation \"public.favoritos\" does not exist")
+                || minusculas.contains("could not find the table 'public.favoritos'")) {
+            return "Falta crear la tabla favoritos en Supabase (ejecuta supabase/favoritos.sql).";
         }
 
         if (codigo == 401) {

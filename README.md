@@ -19,21 +19,33 @@ respaldo.
 - **Categorías dinámicas**: los chips se generan desde las categorías presentes
   en el catálogo; si mañana se agrega “sushi”, el chip aparece solo.
 - **Mejor calificados**: fila horizontal con los locales mejor puntuados.
-- **Mapa**: un marcador por local, con encuadre automático para que todos queden
-  visibles al abrir.
+- **Mapa interactivo**: zoom inicial cercano en San Carlos para distinguir
+  locales vecinos, tarjeta inferior flotante con acceso al detalle y distancias
+  siempre referenciadas dentro de la comuna (con respaldo al centro de San
+  Carlos si el GPS está fuera de la zona).
+- **Favoritos personales (CRUD)**: cada usuario puede guardar sus foodtrucks
+  preferidos con etiqueta (`Favorito`, `Bajón nocturno`, `Con amigos`,
+  `Por probar`) y nota privada desde el detalle o desde **Perfil → Mis
+  favoritos**, filtrar por etiqueta, editar y eliminar con RLS en Supabase.
+- **Recomendación por acelerómetro**: al agitar el dispositivo en Home (o tocar
+  la barra de sugerencia), la app elige un local abierto al azar y lo muestra
+  en una tarjeta visual; se puede activar o desactivar en **Configuración**.
 - **Fotos reales**: cada local muestra su logo en las tarjetas y en la cabecera
   del detalle, con las fotos de sus platos en la sección **Menú**.
 - **Visor de fotos**: al tocar una foto del menú se abre a pantalla completa con
   pellizco para acercar, arrastre y doble toque.
 - **Detalle del local**: estado, distancia, dirección, horario y accesos
   directos a WhatsApp e Instagram.
-- **Cuentas**: registro e inicio de sesión con correo/contraseña y con Discord.
+- **Cuentas y seguridad**: registro e inicio de sesión con correo/contraseña y
+  con Discord, recuperación de contraseña con retorno directo a la app
+  (`streetbite://login-callback`) y cambio de contraseña desde **Mi información**.
 - **Sesión persistente**: al reabrir la app se renueva el token y se entra
   directo a Home.
-- **Perfil**: datos reales del usuario, configuración de sonidos y cierre de
-  sesión.
-- **Sonidos y animaciones**: feedback táctil y transiciones cuidadas, con opción
-  de desactivar los sonidos.
+- **Perfil**: edición de nombre y correo, cambio de contraseña, favoritos,
+  configuración de sonidos y acelerómetro, eliminación de cuenta y logout.
+- **Identidad visual, sonidos y animaciones**: tema *Nocturno Urbano* cálido con
+  degradados e íconos vectoriales propios (sin emojis), efectos de sonido
+  limpios y animaciones sincronizadas a 60 fps.
 - **Respaldo local**: si Supabase falla, la app sigue mostrando el catálogo.
 
 ---
@@ -48,6 +60,7 @@ respaldo.
 | Backend | Supabase |
 | Autenticación | Supabase Auth (Email + Discord PKCE) |
 | Datos | PostgREST + RLS |
+| Sensores | `SensorManager` (`Sensor.TYPE_ACCELEROMETER`) |
 | Sonidos | `SoundPool` con WAV propios |
 | Animaciones | APIs nativas de Views (sin librerías externas) |
 
@@ -60,21 +73,28 @@ app/src/main/java/com/chacho/streetbite/
 ├── SplashActivity.java          # valida sesión y decide login / home
 ├── MainActivity.java            # inicio de sesión
 ├── RegistroActivity.java        # creación de cuenta
-├── HomeActivity.java            # catálogo, búsqueda, filtros y chips
-├── MapActivity.java             # mapa con los locales
-├── DetalleFoodtruckActivity.java # logo, datos y grilla del menú
+├── HomeActivity.java            # catálogo, búsqueda, filtros, chips y sensor
+├── MapActivity.java             # mapa cercano con tarjeta flotante de local
+├── DetalleFoodtruckActivity.java # logo, datos, favorito y grilla del menú
 ├── FotoActivity.java            # visor de fotos a pantalla completa
 ├── PerfilActivity.java          # perfil, configuración y logout
-├── FoodtruckAdapter.java        # tarjetas, logos, DiffUtil y animaciones
+├── MiInformacionActivity.java   # edición de nombre, correo y contraseña
+├── FavoritosActivity.java       # CRUD completo de favoritos con filtros
+├── VideoAyudaActivity.java      # recorrido en video dentro de la app
+├── FoodtruckAdapter.java        # tarjetas, logos, DiffUtil y presión táctil
+├── FavoritoAdapter.java         # tarjetas de favoritos con notas y acciones
+├── DialogoFavorito.java         # diálogo reutilizable crear/editar favorito
+├── DetectorAgitacion.java       # sensor acelerómetro (agitar para sugerir)
 ├── ZoomImageView.java           # zoom y arrastre en el visor
 ├── Imagenes.java                # carga de imágenes con caché y downsampling
 ├── FoodtruckRepositorio.java    # caché, carga remota y respaldo local
-├── Foodtruck.java               # modelo y conversión desde JSON
+├── Foodtruck.java               # modelo, distancias en San Carlos y JSON
+├── Favorito.java                # modelo de favorito y etiquetas personales
 ├── SupabaseHelper.java          # llamadas a Auth y PostgREST
 ├── SupabaseConfig.java          # URL y publishable key
 ├── Sesion.java                  # tokens y sesión persistente
 ├── Sonidos.java                 # efectos de interfaz
-├── Animaciones.java             # entradas escalonadas de cada pantalla
+├── Animaciones.java             # entradas sincronizadas a 60 fps
 └── BaseActivity.java            # sonidos, animaciones, insets y base común
 
 app/src/main/res/layout/         # pantallas e ítems de lista
@@ -128,6 +148,7 @@ Ejecutar en **Supabase → SQL Editor**:
 
 1. `supabase/usuarios.sql` — tabla de perfiles, políticas y trigger.
 2. `supabase/foodtrucks.sql` — catálogo y locales reales de San Carlos.
+3. `supabase/favoritos.sql` — favoritos personales con etiqueta, nota y RLS.
 
 Verificación rápida:
 
@@ -221,6 +242,23 @@ DELETE → authenticated, creado_por = auth.uid()
 Cualquiera puede leer el catálogo, pero solo el dueño de un local puede
 modificarlo.
 
+### `public.favoritos`
+
+Guarda los foodtrucks favoritos de cada usuario con una etiqueta y una nota
+personal privada.
+
+| Columna | Tipo | Descripción |
+|---|---|---|
+| `id` | `uuid` | Clave primaria. |
+| `usuario_id` | `uuid` | Dueño del favorito (FK a `auth.users`, `ON DELETE CASCADE`). |
+| `foodtruck_id` | `uuid` | Local guardado (FK a `public.foodtrucks`, `ON DELETE CASCADE`). |
+| `etiqueta` | `text` | Categoría personal (`Favorito`, `Bajón nocturno`, `Con amigos`, `Por probar`). |
+| `nota` | `text` | Nota personal privada del usuario. |
+| `created_at` / `updated_at` | `timestamptz` | Fechas automáticas. |
+
+**RLS activo** para `authenticated` con `auth.uid() = usuario_id` en `SELECT`,
+`INSERT`, `UPDATE` y `DELETE`, e índice único en `(usuario_id, foodtruck_id)`.
+
 ### Endpoints usados
 
 ```text
@@ -232,9 +270,13 @@ POST /auth/v1/recover
 POST /auth/v1/logout
 GET  /auth/v1/user
 
-GET  /rest/v1/usuarios?usuario_id=eq.<uuid>
-POST /rest/v1/usuarios
-GET  /rest/v1/foodtrucks?select=...&order=rating.desc,nombre.asc
+GET    /rest/v1/usuarios?usuario_id=eq.<uuid>
+POST   /rest/v1/usuarios
+GET    /rest/v1/foodtrucks?select=...&order=rating.desc,nombre.asc
+GET    /rest/v1/favoritos?usuario_id=eq.<uuid>
+POST   /rest/v1/favoritos
+PATCH  /rest/v1/favoritos?id=eq.<uuid>
+DELETE /rest/v1/favoritos?id=eq.<uuid>
 ```
 
 ---
@@ -522,13 +564,39 @@ perfiles de otros usuarios.
 ## Próximos pasos
 
 - Panel para que cada dueño edite su foodtruck sin pasar por el SQL Editor.
+- Migrar logos y fotos del menú a Supabase Storage si el catálogo crece.
 - Notificaciones cuando un local favorito abre o cambia de horario.
-- Favoritos y reseñas de usuarios.
 - Publicación en Play Store.
 
 ---
 
 ## Historial de cambios
+
+### 2026-11-22 — CRUD de favoritos, tema Nocturno Urbano, acelerómetro y mejoras de UX
+
+- **CRUD completo de favoritos (`public.favoritos`)**: nuevo script
+  `supabase/favoritos.sql` con RLS (`auth.uid() = usuario_id`), modelo
+  `Favorito`, pantalla `FavoritosActivity`, `FavoritoAdapter`, `DialogoFavorito`
+  e integración directa en `DetalleFoodtruckActivity` y `PerfilActivity` con
+  etiquetas y notas personales privadas.
+- **Rediseño visual Nocturno Urbano**: paleta cálida espresso y ámbar/dorado,
+  cabeceras y tarjetas con degradados cálidos, bordes sutiles y 25 íconos
+  vectoriales propios en reemplazo de emojis.
+- **Animaciones sincronizadas a 60 fps**: `Animaciones.java` y `BaseActivity`
+  reemplazan las cascadas escalonadas y rebotes por entradas simultáneas con
+  curva Material 3 (`PathInterpolator`) y capas de hardware (`.withLayer()`).
+- **Sonidos limpios**: regenerados `tap.wav` (28 ms) y `transicion.wav` (140 ms)
+  con envolvente suave y calibración de volumen en `Sonidos.java`.
+- **Seguridad y contraseñas**: cambio de contraseña desde
+  `MiInformacionActivity` y flujo completo de recuperación desde `MainActivity`
+  con retorno directo mediante `streetbite://login-callback`.
+- **Distancias y mapa en San Carlos**: `Foodtruck.ubicacionEnSanCarlos(...)`
+  evita lecturas irreales fuera de la comuna, `MapActivity` inicia con zoom
+  cercano (`16.3`) para distinguir locales vecinos y muestra una tarjeta inferior
+  flotante al tocar cada marcador.
+- **Sensor acelerómetro**: nuevo `DetectorAgitacion` (`Sensor.TYPE_ACCELEROMETER`)
+  en `HomeActivity` con tarjeta modal `dialog_recomendacion.xml` para recomendar
+  un local abierto al agitar el teléfono, e interruptor en `PerfilActivity`.
 
 ### 2026-11-18 — Animaciones de entrada más claras y fluidas
 

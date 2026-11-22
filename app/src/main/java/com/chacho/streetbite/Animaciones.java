@@ -3,137 +3,102 @@ package com.chacho.streetbite;
 import android.animation.ValueAnimator;
 import android.view.View;
 import android.view.ViewPropertyAnimator;
-import android.view.animation.OvershootInterpolator;
+import android.view.animation.Interpolator;
+import android.view.animation.PathInterpolator;
 
 /**
- * Animaciones de entrada de la interfaz, con APIs nativas de {@link View}.
+ * Animaciones de interfaz sincronizadas y ligeras, pensadas para verse fluidas
+ * a 60 fps incluso en dispositivos con poca RAM.
  *
- * Están pensadas para verse claras sin castigar al dispositivo: usan el
- * animador propio de la vista, que mueve y difumina por el hilo de
- * renderizado, y no tocan el ancho/alto del layout. Por eso no interrumpen el
- * foco ni la apertura del teclado.
- *
- * Si el usuario desactivó las animaciones en las opciones de desarrollador,
- * {@link ValueAnimator#areAnimatorsEnabled()} es falso y las vistas quedan
- * directamente en su posición final, visibles.
+ * Principios:
+ * - Sincronizadas: todos los elementos entran juntos (sin escalonamiento
+ *   lento uno detrás de otro).
+ * - Curva Material 3 (Emphasized Decelerate): rápida al inicio y suave al
+ *   detenerse, sin rebotes artificiales.
+ * - Hardware layer temporal (.withLayer()) que la GPU compone sin redibujar
+ *   degradados ni textos en cada frame y se libera automáticamente al acabar.
+ * - Si el usuario desactivó las animaciones del sistema, no se anima nada.
  */
 public final class Animaciones {
 
-    /** Caída del login: corta, escalonada y con un rebote discreto. */
-    private static final long DURACION_CAIDA_MS = 460L;
-    private static final long ESCALON_CAIDA_MS = 60L;
-    private static final int DISTANCIA_CAIDA_DP = 70;
-    private static final float REBOTE_CAIDA = 1.2f;
+    /** Curva suave estilo Material 3 (Emphasized Decelerate). */
+    public static final Interpolator CURVA_SUAVE =
+            new PathInterpolator(0.2f, 0f, 0f, 1f);
 
-    /** Entrada del resto de pantallas: subida breve y suave. */
-    private static final long DURACION_ENTRADA_MS = 360L;
-    private static final long ESCALON_ENTRADA_MS = 45L;
-    private static final int DISTANCIA_ENTRADA_DP = 20;
-    private static final float REBOTE_ENTRADA = 1f;
+    private static final long DURACION_ACCESO_MS = 280L;
+    private static final int DISTANCIA_ACCESO_DP = 18;
+
+    private static final long DURACION_ENTRADA_MS = 230L;
+    private static final int DISTANCIA_ENTRADA_DP = 12;
 
     private Animaciones() {
-        // Evita crear instancias de esta clase.
     }
 
-    /** Caída por defecto, usada por el registro. */
+    /** Entrada sincronizada para pantallas de acceso (Registro). */
     public static void caerDesdeArriba(View... vistas) {
-        caer(ESCALON_CAIDA_MS, false, vistas);
+        entrarSincronizado(DURACION_ACCESO_MS, DISTANCIA_ACCESO_DP, vistas);
     }
 
-    /** Caída con un escalonamiento propio, para formularios largos. */
+    /** Sobrecarga mantenida por compatibilidad; entra sincronizado sin delay. */
     public static void caerDesdeArriba(long escalonMs, View... vistas) {
-        caer(escalonMs, false, vistas);
+        entrarSincronizado(DURACION_ACCESO_MS, DISTANCIA_ACCESO_DP, vistas);
     }
 
-    /**
-     * Caída del login: el primer bloque es el logo y entra con un giro leve.
-     * El giro va en la misma animación que la caída para no abrir un segundo
-     * animador sobre la misma vista.
-     */
+    /** Entrada sincronizada para Login (logo + contenido juntos, sin tirones). */
     public static void caerLogoDesdeArriba(View logo, View... resto) {
         View[] vistas = new View[resto.length + 1];
         vistas[0] = logo;
         System.arraycopy(resto, 0, vistas, 1, resto.length);
-
-        caer(ESCALON_CAIDA_MS, true, vistas);
-    }
-
-    private static void caer(long escalonMs, boolean girarLogo, View... vistas) {
-        View referencia = primeraVista(vistas);
-
-        if (!ValueAnimator.areAnimatorsEnabled() || referencia == null) {
-            return;
-        }
-
-        float dp = densidad(referencia);
-        float distancia = DISTANCIA_CAIDA_DP * dp;
-
-        for (int i = 0; i < vistas.length; i++) {
-            View vista = vistas[i];
-
-            if (vista == null) {
-                continue;
-            }
-
-            boolean esLogo = girarLogo && i == 0;
-
-            vista.animate().cancel();
-            vista.setAlpha(0f);
-            vista.setTranslationY(-distancia);
-
-            if (esLogo) {
-                vista.setRotation(-10f);
-            }
-
-            ViewPropertyAnimator animador = vista.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .setDuration(DURACION_CAIDA_MS)
-                    .setStartDelay(i * escalonMs)
-                    .setInterpolator(new OvershootInterpolator(REBOTE_CAIDA));
-
-            if (esLogo) {
-                animador.rotation(0f);
-            }
-
-            animador.start();
-        }
+        entrarSincronizado(DURACION_ACCESO_MS, DISTANCIA_ACCESO_DP, vistas);
     }
 
     /**
-     * Entrada por defecto del resto de pantallas: los bloques suben un poco y
-     * aparecen en cascada, con un recorrido más corto que el del login.
+     * Entrada por defecto del resto de pantallas: toda la vista entra como un
+     * solo bloque fluido y sincronizado.
      */
     public static void entrarDesdeAbajo(View... vistas) {
+        entrarSincronizado(DURACION_ENTRADA_MS, DISTANCIA_ENTRADA_DP, vistas);
+    }
+
+    private static void entrarSincronizado(
+            long duracionMs,
+            int distanciaDp,
+            View... vistas) {
+
         View referencia = primeraVista(vistas);
 
         if (!ValueAnimator.areAnimatorsEnabled() || referencia == null) {
             return;
         }
 
-        float dp = densidad(referencia);
-        float distancia = DISTANCIA_ENTRADA_DP * dp;
+        float distancia = distanciaDp * densidad(referencia);
 
-        for (int i = 0; i < vistas.length; i++) {
-            View vista = vistas[i];
-
+        // Preparamos todas las vistas antes del primer frame.
+        for (View vista : vistas) {
             if (vista == null) {
                 continue;
             }
-
             vista.animate().cancel();
             vista.setAlpha(0f);
             vista.setTranslationY(distancia);
-
-            vista.animate()
-                    .alpha(1f)
-                    .translationY(0f)
-                    .setDuration(DURACION_ENTRADA_MS)
-                    .setStartDelay(i * ESCALON_ENTRADA_MS)
-                    .setInterpolator(
-                            new OvershootInterpolator(REBOTE_ENTRADA))
-                    .start();
         }
+
+        // Disparamos todas a la vez justo cuando la ventana ya midió el layout,
+        // evitando perder frames durante el inflado inicial.
+        referencia.post(() -> {
+            for (View vista : vistas) {
+                if (vista == null) {
+                    continue;
+                }
+                ViewPropertyAnimator animador = vista.animate()
+                        .alpha(1f)
+                        .translationY(0f)
+                        .setDuration(duracionMs)
+                        .setInterpolator(CURVA_SUAVE)
+                        .withLayer();
+                animador.start();
+            }
+        });
     }
 
     private static View primeraVista(View[] vistas) {
@@ -142,7 +107,6 @@ public final class Animaciones {
                 return vista;
             }
         }
-
         return null;
     }
 

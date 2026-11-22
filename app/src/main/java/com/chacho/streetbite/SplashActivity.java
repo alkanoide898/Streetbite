@@ -1,7 +1,6 @@
 package com.chacho.streetbite;
 
 import android.animation.Animator;
-import android.animation.Keyframe;
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
 import android.content.Intent;
@@ -29,11 +28,11 @@ import java.util.List;
 public class SplashActivity extends BaseActivity {
 
     // Tiempo mínimo para que se alcance a ver la animación
-    private static final long DURACION_MINIMA_MS = 1800;
+    private static final long DURACION_MINIMA_MS = 1300;
 
-    private static final int COLOR_FONDO = 0xFF3E2723;
-    private static final int COLOR_CREMA = 0xFFFFF3E0;
-    private static final int COLOR_NARANJA = 0xFFFF7A00;
+    private static final int COLOR_FONDO = 0xFF1C1613;
+    private static final int COLOR_CREMA = 0xFFFAF5EE;
+    private static final int COLOR_NARANJA = 0xFFFFB020;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -120,62 +119,52 @@ public class SplashActivity extends BaseActivity {
 
         float dp = getResources().getDisplayMetrics().density;
 
-        // 1) Logo: pequeño "rebote" con un giro, como un mordisco
-        PropertyValuesHolder escalaX = PropertyValuesHolder.ofKeyframe(
-                View.SCALE_X,
-                Keyframe.ofFloat(0f, 1f),
-                Keyframe.ofFloat(0.30f, 0.90f),
-                Keyframe.ofFloat(0.65f, 1.08f),
-                Keyframe.ofFloat(1f, 1f));
+        // 1) Logo, nombre y lema entran sincronizados en el primer frame.
+        logo.setAlpha(0f);
+        logo.setScaleX(0.92f);
+        logo.setScaleY(0.92f);
 
-        PropertyValuesHolder escalaY = PropertyValuesHolder.ofKeyframe(
-                View.SCALE_Y,
-                Keyframe.ofFloat(0f, 1f),
-                Keyframe.ofFloat(0.30f, 0.90f),
-                Keyframe.ofFloat(0.65f, 1.08f),
-                Keyframe.ofFloat(1f, 1f));
+        nombre.setAlpha(0f);
+        nombre.setTranslationY(14 * dp);
 
-        PropertyValuesHolder giro = PropertyValuesHolder.ofKeyframe(
-                View.ROTATION,
-                Keyframe.ofFloat(0f, 0f),
-                Keyframe.ofFloat(0.30f, -8f),
-                Keyframe.ofFloat(0.65f, 6f),
-                Keyframe.ofFloat(1f, 0f));
+        lema.setAlpha(0f);
+        lema.setTranslationY(14 * dp);
 
-        ObjectAnimator rebote =
-                ObjectAnimator.ofPropertyValuesHolder(logo, escalaX, escalaY, giro);
-        rebote.setDuration(900);
-        rebote.setStartDelay(150);
-        rebote.start();
+        logo.post(() -> {
+            logo.animate()
+                    .alpha(1f)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(420)
+                    .setInterpolator(Animaciones.CURVA_SUAVE)
+                    .withLayer()
+                    .start();
+
+            nombre.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(420)
+                    .setInterpolator(Animaciones.CURVA_SUAVE)
+                    .withLayer()
+                    .start();
+
+            lema.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(420)
+                    .setInterpolator(Animaciones.CURVA_SUAVE)
+                    .withLayer()
+                    .start();
+        });
 
         // 2) Dos anillos que pulsan detrás del logo
-        animarPulso(pulso1, 400);
-        animarPulso(pulso2, 1150);
+        animarPulso(pulso1, 0);
+        animarPulso(pulso2, 900);
 
-        // 3) Nombre: sube y aparece
-        nombre.setTranslationY(32 * dp);
-        nombre.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setStartDelay(350)
-                .setDuration(600)
-                .setInterpolator(new DecelerateInterpolator())
-                .start();
-
-        // 4) Lema: aparece un poco después
-        lema.setTranslationY(16 * dp);
-        lema.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setStartDelay(700)
-                .setDuration(600)
-                .setInterpolator(new DecelerateInterpolator())
-                .start();
-
-        // 5) Puntos de carga: laten uno tras otro
+        // 3) Puntos de carga: laten uno tras otro
         animarPunto(findViewById(R.id.punto1), 0);
-        animarPunto(findViewById(R.id.punto2), 150);
-        animarPunto(findViewById(R.id.punto3), 300);
+        animarPunto(findViewById(R.id.punto2), 120);
+        animarPunto(findViewById(R.id.punto3), 240);
     }
 
     private void animarPulso(View anillo, long retraso) {

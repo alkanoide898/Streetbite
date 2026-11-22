@@ -43,7 +43,7 @@ public class PerfilActivity extends BaseActivity {
         btnEliminarCuenta.setOnClickListener(v -> confirmarEliminarCuenta());
 
         btnFavoritos.setOnClickListener(v ->
-                Toast.makeText(this, "Mis favoritos", Toast.LENGTH_SHORT).show()
+                startActivity(new Intent(this, FavoritosActivity.class))
         );
 
         btnConfiguracion.setOnClickListener(v -> mostrarConfiguracion());
@@ -270,9 +270,28 @@ public class PerfilActivity extends BaseActivity {
         int margen = Math.round(
                 20 * getResources().getDisplayMetrics().density);
 
-        FrameLayout contenedor = new FrameLayout(this);
+        CheckBox checkAgitar = new CheckBox(this);
+        checkAgitar.setText("Agitar para recomendar un foodtruck");
+        checkAgitar.setChecked(DetectorAgitacion.estaActivo(this));
+        checkAgitar.setOnCheckedChangeListener((boton, activo) -> {
+            Sonidos.tocar(this);
+            DetectorAgitacion.activar(this, activo);
+        });
+
+        int espacioEntre = Math.round(
+                10 * getResources().getDisplayMetrics().density);
+
+        LinearLayout contenedor = new LinearLayout(this);
+        contenedor.setOrientation(LinearLayout.VERTICAL);
         contenedor.setPadding(margen, margen / 2, margen, 0);
         contenedor.addView(checkSonidos);
+        LinearLayout.LayoutParams paramsAgitar = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        paramsAgitar.topMargin = espacioEntre;
+        checkAgitar.setLayoutParams(paramsAgitar);
+        contenedor.addView(checkAgitar);
 
         AlertDialog configuracion = new AlertDialog.Builder(this)
                 .setTitle("Configuración")

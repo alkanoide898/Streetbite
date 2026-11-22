@@ -8,15 +8,15 @@
     android:clickable="true"
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground"
-    app:cardBackgroundColor="@android:color/white"
-    app:cardCornerRadius="16dp"
+    app:cardBackgroundColor="@color/sb_superficie"
+    app:cardCornerRadius="14dp"
     app:cardElevation="1dp">
 
     <ImageView
         android:id="@+id/imgMenuFoto"
         android:layout_width="match_parent"
-        android:layout_height="190dp"
-        android:background="@color/sb_crema"
+        android:layout_height="184dp"
+        android:background="@color/sb_crema_oscuro"
         android:contentDescription="Foto del menú"
         android:scaleType="centerCrop" />
 

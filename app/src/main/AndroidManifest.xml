@@ -58,6 +58,11 @@
             android:name=".MiInformacionActivity"
             android:exported="false" />
 
+        <!-- MIS FAVORITOS -->
+        <activity
+            android:name=".FavoritosActivity"
+            android:exported="false" />
+
         <!-- CÓMO FUNCIONA (VIDEO DEL RECORRIDO) -->
         <activity
             android:name=".VideoAyudaActivity"

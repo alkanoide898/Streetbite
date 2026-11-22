@@ -5,24 +5,28 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.DecelerateInterpolator;
-import android.view.animation.OvershootInterpolator;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.ContextCompat;
@@ -36,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 
 public class HomeActivity extends BaseActivity {
 
@@ -62,8 +67,16 @@ public class HomeActivity extends BaseActivity {
 
     private TextView botonCategoriaSeleccionado;
 
-    // Ubicación del usuario
-    private Location ubicacionUsuario;
+    // Ubicación de referencia (centro de San Carlos si no hay GPS local)
+    private Location ubicacionUsuario = Foodtruck.ubicacionEnSanCarlos(null);
+
+    // Sensor acelerómetro (agitar para recomendar un local)
+    private DetectorAgitacion detectorAgitacion;
+    private AlertDialog dialogoRecomendacion;
+    private View vistaRecomendacion;
+    private Foodtruck foodtruckRecomendado;
+    private String ultimoRecomendadoId = "";
+    private final Random aleatorio = new Random();
 
     private boolean cargando = false;
 
@@ -91,6 +104,7 @@ public class HomeActivity extends BaseActivity {
         configurarBuscador();
         configurarListas();
         configurarUbicacion();
+        configurarSensorAgitacion();
 
         cargarFoodtrucks();
     }
@@ -122,7 +136,7 @@ public class HomeActivity extends BaseActivity {
         );
     }
 
-    /** Rebote corto del botón de la barra inferior al tocarlo. */
+    /** Feedback corto y suave del botón de la barra inferior al tocarlo. */
     private void animarBotonNav(View vista) {
 
         if (!ValueAnimator.areAnimatorsEnabled()) {
@@ -134,16 +148,16 @@ public class HomeActivity extends BaseActivity {
         vista.setScaleY(1f);
 
         vista.animate()
-                .scaleX(1.12f)
-                .scaleY(1.12f)
-                .setDuration(90)
-                .setInterpolator(new DecelerateInterpolator())
+                .scaleX(0.94f)
+                .scaleY(0.94f)
+                .setDuration(70)
+                .setInterpolator(Animaciones.CURVA_SUAVE)
                 .withEndAction(() ->
                         vista.animate()
                                 .scaleX(1f)
                                 .scaleY(1f)
-                                .setDuration(180)
-                                .setInterpolator(new OvershootInterpolator(2f))
+                                .setDuration(130)
+                                .setInterpolator(Animaciones.CURVA_SUAVE)
                                 .start()
                 )
                 .start();
@@ -386,7 +400,7 @@ public class HomeActivity extends BaseActivity {
         return chip;
     }
 
-    /** Pequeño "pop" del chip al elegirlo. */
+    /** Micro-feedback suave del chip al elegirlo. */
     private void animarChip(View chip) {
 
         if (!ValueAnimator.areAnimatorsEnabled()) {
@@ -398,16 +412,16 @@ public class HomeActivity extends BaseActivity {
         chip.setScaleY(1f);
 
         chip.animate()
-                .scaleX(0.92f)
-                .scaleY(0.92f)
+                .scaleX(0.94f)
+                .scaleY(0.94f)
                 .setDuration(70)
-                .setInterpolator(new DecelerateInterpolator())
+                .setInterpolator(Animaciones.CURVA_SUAVE)
                 .withEndAction(() ->
                         chip.animate()
                                 .scaleX(1f)
                                 .scaleY(1f)
-                                .setDuration(170)
-                                .setInterpolator(new OvershootInterpolator(2f))
+                                .setDuration(130)
+                                .setInterpolator(Animaciones.CURVA_SUAVE)
                                 .start()
                 )
                 .start();
@@ -437,74 +451,74 @@ public class HomeActivity extends BaseActivity {
         switch (categoria.toLowerCase(Locale.ROOT)) {
 
             case "tacos":
-                return "🌮 Tacos";
+                return "Tacos";
             case "hamburguesas":
             case "hamburguesa":
-                return "🍔 Hamburguesas";
+                return "Hamburguesas";
             case "completos":
             case "completo":
-                return "🌭 Completos";
+                return "Completos";
             case "pizza":
             case "pizzas":
-                return "🍕 Pizza";
+                return "Pizzas";
             case "sushi":
-                return "🍣 Sushi";
+                return "Sushi";
             case "empanadas":
             case "empanada":
-                return "🥟 Empanadas";
+                return "Empanadas";
             case "papas fritas":
             case "papas":
-                return "🍟 Papas fritas";
+                return "Papas fritas";
             case "cafe":
             case "café":
-                return "☕ Café";
+                return "Café";
             case "postres":
             case "postre":
-                return "🍰 Postres";
+                return "Postres";
             case "sandwiches":
             case "sándwiches":
             case "sandwich":
             case "sandwichs":
-                return "🥪 Sándwiches";
+                return "Sándwiches";
             case "pollo":
-                return "🍗 Pollo";
+                return "Pollo";
             case "churrascos":
             case "churrasco":
-                return "🥩 Churrascos";
+                return "Churrascos";
             case "pichangas":
             case "pichanga":
-                return "🥘 Pichangas";
+                return "Pichangas";
             case "fajitas":
             case "fajita":
-                return "🌯 Fajitas";
+                return "Fajitas";
             case "bowls":
             case "bowl":
-                return "🥣 Bowls";
+                return "Bowls";
             case "alitas":
             case "alita":
-                return "🍗 Alitas";
+                return "Alitas";
             case "almuerzos":
             case "almuerzo":
-                return "🍽️ Almuerzos";
+                return "Almuerzos";
             case "bebestibles":
-                return "🥤 Bebestibles";
+                return "Bebestibles";
             case "fritos":
             case "frito":
-                return "🍟 Fritos";
+                return "Fritos";
             case "chorrillanas":
             case "chorrillana":
-                return "🍳 Chorrillanas";
+                return "Chorrillanas";
             case "salchipapas":
             case "salchipapa":
-                return "🍟 Salchipapas";
+                return "Salchipapas";
             case "handrolls":
             case "handroll":
-                return "🍣 Handrolls";
+                return "Handrolls";
             case "arrollados":
             case "arrollado":
-                return "🌯 Arrollados";
+                return "Arrollados";
             case "palitos de ajo":
-                return "🧄 Palitos de ajo";
+                return "Palitos de ajo";
             default:
                 return capitalizar(categoria);
         }
@@ -534,9 +548,20 @@ public class HomeActivity extends BaseActivity {
 
         if (botonCategoriaSeleccionado != null) {
             botonCategoriaSeleccionado.setSelected(false);
+            botonCategoriaSeleccionado.setTextColor(
+                    ContextCompat.getColor(this, R.color.sb_marron)
+            );
+            botonCategoriaSeleccionado.setTypeface(
+                    null,
+                    android.graphics.Typeface.NORMAL
+            );
         }
 
         boton.setSelected(true);
+        boton.setTextColor(
+                ContextCompat.getColor(this, R.color.sb_texto_sobre_acento)
+        );
+        boton.setTypeface(null, android.graphics.Typeface.BOLD);
         botonCategoriaSeleccionado = boton;
     }
 
@@ -706,19 +731,8 @@ public class HomeActivity extends BaseActivity {
             }
         }
 
-        if (mejor != null) {
-
-            ubicacionUsuario = mejor;
-            aplicarFiltros();
-
-        } else {
-
-            Toast.makeText(
-                    this,
-                    "No se pudo obtener la ubicación actual",
-                    Toast.LENGTH_SHORT
-            ).show();
-        }
+        ubicacionUsuario = Foodtruck.ubicacionEnSanCarlos(mejor);
+        aplicarFiltros();
     }
 
     // ==========================================
@@ -772,12 +786,8 @@ public class HomeActivity extends BaseActivity {
                 obtenerUbicacionActual();
 
             } else {
-
-                Toast.makeText(
-                        this,
-                        "Sin permiso de ubicación",
-                        Toast.LENGTH_SHORT
-                ).show();
+                ubicacionUsuario = Foodtruck.ubicacionEnSanCarlos(null);
+                aplicarFiltros();
             }
         }
     }
@@ -834,6 +844,10 @@ public class HomeActivity extends BaseActivity {
 
         reiniciarBotonesNav();
 
+        if (detectorAgitacion != null) {
+            detectorAgitacion.iniciar();
+        }
+
         if (todos.isEmpty() && !cargando) {
             cargarFoodtrucks();
         }
@@ -845,6 +859,209 @@ public class HomeActivity extends BaseActivity {
         } else if (ubicacionUsuario != null) {
 
             aplicarFiltros();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (detectorAgitacion != null) {
+            detectorAgitacion.detener();
+        }
+        super.onPause();
+    }
+
+    // ==========================================
+    // SENSOR ACELERÓMETRO (AGITAR PARA ELEGIR)
+    // ==========================================
+    private void configurarSensorAgitacion() {
+        detectorAgitacion = new DetectorAgitacion(this, this::alAgitarTelefono);
+
+        View btnSugerencia = findViewById(R.id.btnSugerenciaAgitar);
+        if (btnSugerencia != null) {
+            btnSugerencia.setOnClickListener(v -> recomendarFoodtruckAleatorio());
+        }
+    }
+
+    private void alAgitarTelefono() {
+        runOnUiThread(() -> {
+            getWindow().getDecorView().performHapticFeedback(
+                    HapticFeedbackConstants.LONG_PRESS
+            );
+            Sonidos.tocar(HomeActivity.this);
+            recomendarFoodtruckAleatorio();
+        });
+    }
+
+    private void recomendarFoodtruckAleatorio() {
+        if (todos.isEmpty()) {
+            Toast.makeText(
+                    this,
+                    "Aún cargando foodtrucks...",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        // Prioridad: 1) abiertos de la categoría elegida, 2) abiertos, 3) todos.
+        List<Foodtruck> candidatos = new ArrayList<>();
+
+        for (Foodtruck ft : todos) {
+            boolean coincideCat = categoriaActual == null
+                    || ft.tieneCategoria(categoriaActual);
+            if (ft.abierto && coincideCat) {
+                candidatos.add(ft);
+            }
+        }
+
+        if (candidatos.isEmpty()) {
+            for (Foodtruck ft : todos) {
+                if (ft.abierto) {
+                    candidatos.add(ft);
+                }
+            }
+        }
+
+        if (candidatos.isEmpty()) {
+            candidatos.addAll(todos);
+        }
+
+        Foodtruck elegido = candidatos.get(aleatorio.nextInt(candidatos.size()));
+        if (candidatos.size() > 1) {
+            String clave = elegido.id.isEmpty() ? elegido.nombre : elegido.id;
+            int intentos = 0;
+            while (clave.equals(ultimoRecomendadoId) && intentos < 5) {
+                elegido = candidatos.get(aleatorio.nextInt(candidatos.size()));
+                clave = elegido.id.isEmpty() ? elegido.nombre : elegido.id;
+                intentos++;
+            }
+        }
+
+        ultimoRecomendadoId = elegido.id.isEmpty() ? elegido.nombre : elegido.id;
+        foodtruckRecomendado = elegido;
+
+        if (vistaRecomendacion == null) {
+            vistaRecomendacion = getLayoutInflater().inflate(
+                    R.layout.dialog_recomendacion, null);
+
+            vistaRecomendacion.findViewById(R.id.btnCerrarRecomendacion)
+                    .setOnClickListener(v -> {
+                        Sonidos.tocar(HomeActivity.this);
+                        if (dialogoRecomendacion != null) {
+                            dialogoRecomendacion.dismiss();
+                        }
+                    });
+
+            vistaRecomendacion.findViewById(R.id.btnOtroRecomendado)
+                    .setOnClickListener(v -> {
+                        Sonidos.tocar(HomeActivity.this);
+                        recomendarFoodtruckAleatorio();
+                    });
+
+            vistaRecomendacion.findViewById(R.id.btnVerRecomendado)
+                    .setOnClickListener(v -> {
+                        Sonidos.tocar(HomeActivity.this);
+                        if (dialogoRecomendacion != null) {
+                            dialogoRecomendacion.dismiss();
+                        }
+                        if (foodtruckRecomendado != null) {
+                            abrirDetalle(foodtruckRecomendado, null);
+                        }
+                    });
+        }
+
+        actualizarVistaRecomendacion(vistaRecomendacion, elegido);
+
+        if (dialogoRecomendacion == null) {
+            dialogoRecomendacion = new AlertDialog.Builder(this)
+                    .setView(vistaRecomendacion)
+                    .create();
+
+            if (dialogoRecomendacion.getWindow() != null) {
+                dialogoRecomendacion.getWindow().setBackgroundDrawable(
+                        new ColorDrawable(Color.TRANSPARENT)
+                );
+            }
+        }
+
+        if (!dialogoRecomendacion.isShowing()) {
+            dialogoRecomendacion.show();
+        } else if (ValueAnimator.areAnimatorsEnabled()) {
+            vistaRecomendacion.animate().cancel();
+            vistaRecomendacion.setAlpha(0.6f);
+            vistaRecomendacion.animate()
+                    .alpha(1f)
+                    .setDuration(180L)
+                    .setInterpolator(Animaciones.CURVA_SUAVE)
+                    .start();
+        }
+    }
+
+    private void actualizarVistaRecomendacion(View vista, Foodtruck elegido) {
+        ImageView imgLogo = vista.findViewById(R.id.imgRecomendacionLogo);
+        TextView txtNombre = vista.findViewById(R.id.txtRecomendacionNombre);
+        TextView txtDesc = vista.findViewById(R.id.txtRecomendacionDescripcion);
+        TextView txtRating = vista.findViewById(R.id.txtRecomendacionRating);
+        TextView txtDistancia = vista.findViewById(R.id.txtRecomendacionDistancia);
+        TextView txtEstado = vista.findViewById(R.id.txtRecomendacionEstado);
+        View bloqueInfo = vista.findViewById(R.id.bloqueRecomendacionInfo);
+        TextView txtDireccion = vista.findViewById(R.id.txtRecomendacionDireccion);
+        TextView txtHorario = vista.findViewById(R.id.txtRecomendacionHorario);
+
+        if (!elegido.logoNombre.isEmpty()) {
+            imgLogo.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            imgLogo.setPadding(dp(8), dp(8), dp(8), dp(8));
+            Imagenes.cargar(imgLogo, elegido.logoNombre, 140, 140);
+        } else {
+            imgLogo.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            imgLogo.setPadding(0, 0, 0, 0);
+            imgLogo.setImageResource(elegido.imagen);
+        }
+
+        txtNombre.setText(elegido.nombre);
+        if (elegido.descripcion.isEmpty()) {
+            txtDesc.setVisibility(View.GONE);
+        } else {
+            txtDesc.setText(elegido.descripcion);
+            txtDesc.setVisibility(View.VISIBLE);
+        }
+
+        txtRating.setText(elegido.ratingTexto());
+        txtDistancia.setText(elegido.distanciaTexto(ubicacionUsuario));
+
+        txtEstado.setText(elegido.estadoTexto());
+        int colorEstado = getColor(
+                elegido.abierto ? R.color.sb_verde : R.color.sb_rojo
+        );
+        txtEstado.setTextColor(colorEstado);
+        txtEstado.setBackgroundResource(
+                elegido.abierto
+                        ? R.drawable.bg_badge_abierto
+                        : R.drawable.bg_badge_cerrado
+        );
+        txtEstado.setCompoundDrawableTintList(
+                ColorStateList.valueOf(colorEstado)
+        );
+
+        boolean tieneDireccion = !elegido.direccion.trim().isEmpty();
+        boolean tieneHorario = !elegido.horario.trim().isEmpty();
+
+        if (!tieneDireccion && !tieneHorario) {
+            bloqueInfo.setVisibility(View.GONE);
+        } else {
+            bloqueInfo.setVisibility(View.VISIBLE);
+            if (tieneDireccion) {
+                txtDireccion.setText(elegido.direccion.trim());
+                txtDireccion.setVisibility(View.VISIBLE);
+            } else {
+                txtDireccion.setVisibility(View.GONE);
+            }
+
+            if (tieneHorario) {
+                txtHorario.setText(elegido.horario.trim());
+                txtHorario.setVisibility(View.VISIBLE);
+            } else {
+                txtHorario.setVisibility(View.GONE);
+            }
         }
     }
 }

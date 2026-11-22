@@ -1,167 +1,207 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F7F5F2"
-    android:padding="30dp">
+    android:background="@drawable/bg_hero_logo">
 
-
-
-    <!-- TÍTULO -->
-
-
-    <TextView
-        android:id="@+id/txtTituloRegistro"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Crear cuenta"
-        android:textSize="30sp"
-        android:textStyle="bold"
-        android:textColor="#3E2723"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-
-
-    <!-- DESCRIPCIÓN -->
-
-    <TextView
-        android:id="@+id/txtDescripcionRegistro"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Regístrate para comenzar a usar StreetBite"
-        android:textSize="14sp"
-        android:textColor="#795548"
-        app:layout_constraintTop_toBottomOf="@id/txtTituloRegistro"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-
-    <!-- NOMBRE -->
-
-
-    <EditText
-        android:id="@+id/edtNombre"
+    <ScrollView
         android:layout_width="0dp"
-        android:layout_height="55dp"
-        android:layout_marginTop="35dp"
-        android:hint="Nombre"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:textColor="#3E2723"
-        android:textColorHint="#9E918A"
-        android:background="@drawable/bg_search"
-        android:singleLine="true"
-        android:inputType="textPersonName"
-        app:layout_constraintTop_toBottomOf="@id/txtDescripcionRegistro"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:overScrollMode="never"
+        android:scrollbars="none"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
 
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:paddingStart="24dp"
+            android:paddingTop="32dp"
+            android:paddingEnd="24dp"
+            android:paddingBottom="32dp">
 
+            <!-- TÍTULO -->
+            <TextView
+                android:id="@+id/txtTituloRegistro"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="-0.02"
+                android:text="Crear cuenta"
+                android:textColor="@color/sb_marron"
+                android:textSize="30sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- CORREO -->
+            <!-- DESCRIPCIÓN -->
+            <TextView
+                android:id="@+id/txtDescripcionRegistro"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:text="Regístrate para descubrir foodtrucks en San Carlos"
+                android:textColor="@color/sb_texto_suave"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/txtTituloRegistro" />
 
+            <!-- TARJETA DEL FORMULARIO -->
+            <LinearLayout
+                android:id="@+id/cardRegistro"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="26dp"
+                android:background="@drawable/bg_tarjeta_borde"
+                android:clipChildren="false"
+                android:clipToPadding="false"
+                android:elevation="2dp"
+                android:orientation="vertical"
+                android:padding="22dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/txtDescripcionRegistro"
+                app:layout_constraintWidth_max="440dp">
 
-    <EditText
-        android:id="@+id/edtCorreoRegistro"
-        android:layout_width="0dp"
-        android:layout_height="55dp"
-        android:layout_marginTop="12dp"
-        android:hint="Correo electrónico"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:textColor="#3E2723"
-        android:textColorHint="#9E918A"
-        android:background="@drawable/bg_search"
-        android:singleLine="true"
-        android:inputType="textEmailAddress"
-        app:layout_constraintTop_toBottomOf="@id/edtNombre"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nombre"
+                    android:textColor="@color/sb_marron"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
+                <EditText
+                    android:id="@+id/edtNombre"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_sb_input"
+                    android:hint="Tu nombre"
+                    android:imeOptions="actionNext"
+                    android:inputType="textPersonName"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:singleLine="true"
+                    android:textColor="@color/sb_marron"
+                    android:textColorHint="@color/sb_hint"
+                    android:textSize="15sp" />
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="Correo electrónico"
+                    android:textColor="@color/sb_marron"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-    <!-- CONTRASEÑA -->
+                <EditText
+                    android:id="@+id/edtCorreoRegistro"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_sb_input"
+                    android:hint="tucorreo@ejemplo.cl"
+                    android:imeOptions="actionNext"
+                    android:inputType="textEmailAddress"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:singleLine="true"
+                    android:textColor="@color/sb_marron"
+                    android:textColorHint="@color/sb_hint"
+                    android:textSize="15sp" />
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="Contraseña"
+                    android:textColor="@color/sb_marron"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
-    <EditText
-        android:id="@+id/edtPasswordRegistro"
-        android:layout_width="0dp"
-        android:layout_height="55dp"
-        android:layout_marginTop="12dp"
-        android:hint="Contraseña"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:textColor="#3E2723"
-        android:textColorHint="#9E918A"
-        android:background="@drawable/bg_search"
-        android:singleLine="true"
-        android:inputType="textPassword"
-        app:layout_constraintTop_toBottomOf="@id/edtCorreoRegistro"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+                <EditText
+                    android:id="@+id/edtPasswordRegistro"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_sb_input"
+                    android:hint="Mínimo 6 caracteres"
+                    android:imeOptions="actionNext"
+                    android:inputType="textPassword"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:singleLine="true"
+                    android:textColor="@color/sb_marron"
+                    android:textColorHint="@color/sb_hint"
+                    android:textSize="15sp" />
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="Repetir contraseña"
+                    android:textColor="@color/sb_marron"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
 
+                <EditText
+                    android:id="@+id/edtConfirmarPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/bg_sb_input"
+                    android:hint="Vuelve a escribir tu contraseña"
+                    android:imeOptions="actionDone"
+                    android:inputType="textPassword"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:singleLine="true"
+                    android:textColor="@color/sb_marron"
+                    android:textColorHint="@color/sb_hint"
+                    android:textSize="15sp" />
 
-    <!-- REPETIR CONTRASEÑA -->
+                <!-- BOTÓN REGISTRARSE -->
+                <Button
+                    android:id="@+id/btnRegistrar"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="22dp"
+                    android:background="@drawable/bg_boton_primario"
+                    android:stateListAnimator="@null"
+                    android:text="Registrarse"
+                    android:textAllCaps="false"
+                    android:textColor="@color/sb_texto_sobre_acento"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
+            <!-- VOLVER AL LOGIN -->
+            <TextView
+                android:id="@+id/txtVolverLogin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:padding="10dp"
+                android:text="¿Ya tienes una cuenta? Inicia sesión"
+                android:textColor="@color/sb_naranja"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cardRegistro" />
 
-    <EditText
-        android:id="@+id/edtConfirmarPassword"
-        android:layout_width="0dp"
-        android:layout_height="55dp"
-        android:layout_marginTop="12dp"
-        android:hint="Repetir contraseña"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:textColor="#3E2723"
-        android:textColorHint="#9E918A"
-        android:background="@drawable/bg_search"
-        android:singleLine="true"
-        android:inputType="textPassword"
-        app:layout_constraintTop_toBottomOf="@id/edtPasswordRegistro"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-
-
-    <!-- BOTÓN REGISTRARSE -->
-
-
-    <Button
-        android:id="@+id/btnRegistrar"
-        android:layout_width="0dp"
-        android:layout_height="55dp"
-        android:layout_marginTop="25dp"
-        android:text="Registrarse"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        android:backgroundTint="#8D6E63"
-        app:layout_constraintTop_toBottomOf="@id/edtConfirmarPassword"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-
-
-    <!-- VOLVER AL LOGIN -->
-
-
-    <TextView
-        android:id="@+id/txtVolverLogin"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="¿Ya tienes una cuenta? Inicia sesión"
-        android:textSize="14sp"
-        android:textColor="#795548"
-        app:layout_constraintTop_toBottomOf="@id/btnRegistrar"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

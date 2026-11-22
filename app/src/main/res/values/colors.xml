@@ -1,14 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="sb_marron">#3E2723</color>
-    <color name="sb_naranja">#FF7A00</color>
-    <color name="sb_naranja_oscuro">#E65100</color>
-    <color name="sb_ambar">#FFB300</color>
-    <color name="sb_crema">#FFF8F0</color>
-    <color name="sb_crema_oscuro">#F5E6D8</color>
-    <color name="sb_superficie">#FFFFFF</color>
-    <color name="sb_texto">#3E2723</color>
-    <color name="sb_texto_suave">#8D6E63</color>
-    <color name="sb_borde">#EADBCF</color>
+    <!-- Identidad Nocturno Urbano cálido (espresso & ámbar) -->
+    <color name="sb_marron">#FAF5EE</color>
+    <color name="sb_marron_suave">#DDD0C6</color>
+    <color name="sb_naranja">#FFB020</color>
+    <color name="sb_naranja_oscuro">#F59E0B</color>
+    <color name="sb_naranja_suave">#3B2918</color>
+    <color name="sb_ambar">#FFC53D</color>
+    <color name="sb_texto_sobre_acento">#1E140C</color>
+
+    <!-- Superficies cálidas oscuras (sin negro puro) -->
+    <color name="sb_crema">#1C1613</color>
+    <color name="sb_crema_oscuro">#30241E</color>
+    <color name="sb_superficie">#261E1A</color>
+    <color name="sb_texto">#FAF5EE</color>
+    <color name="sb_texto_suave">#C2B2A6</color>
+    <color name="sb_hint">#8E7D72</color>
+    <color name="sb_borde">#4B3A2F</color>
+    <color name="sb_divisor">#3B2D25</color>
+
+    <!-- Estados semánticos -->
+    <color name="sb_verde">#34D399</color>
+    <color name="sb_verde_suave">#163327</color>
+    <color name="sb_rojo">#F87171</color>
+    <color name="sb_rojo_suave">#3B1C1E</color>
+    <color name="sb_rojo_borde">#6B2D30</color>
+
+    <!-- Terceros -->
     <color name="sb_discord">#5865F2</color>
 </resources>

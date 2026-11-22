@@ -1,5 +1,11 @@
 <resources>
-    <style name="Theme.StreetBite" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="Theme.StreetBite" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/sb_naranja</item>
+        <item name="colorPrimaryDark">@color/sb_crema</item>
+        <item name="colorAccent">@color/sb_naranja</item>
+        <item name="android:windowBackground">@color/sb_crema</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
         <!-- Transición compartida de la foto al abrir el detalle -->
         <item name="android:windowActivityTransitions">true</item>
         <item name="android:windowContentTransitions">true</item>
@@ -8,10 +14,12 @@
     <!-- Visor de fotos del menú: fondo negro a pantalla completa -->
     <style name="Theme.StreetBite.Foto" parent="Theme.StreetBite">
         <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
-    <!--  Splash del sistema: mismo fondo que activity_splash.xml para que no se note el salto  -->
+
+    <!-- Splash del sistema: mismo fondo que activity_splash.xml para que no se note el salto -->
     <style name="Theme.StreetBite.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#3E2723</item>
+        <item name="windowSplashScreenBackground">#1C1613</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_icon</item>
         <item name="postSplashScreenTheme">@style/Theme.StreetBite</item>
     </style>

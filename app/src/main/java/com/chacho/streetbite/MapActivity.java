@@ -1,9 +1,12 @@
 package com.chacho.streetbite;
 
 import android.Manifest;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
@@ -11,19 +14,24 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.ContextCompat;
 
 import org.osmdroid.config.Configuration;
+import org.osmdroid.events.MapEventsReceiver;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
-import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.MapEventsOverlay;
 import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
@@ -36,14 +44,32 @@ public class MapActivity extends BaseActivity {
     private static final int PERMISOS_UBICACION = 1001;
     private static final String PREFS_UBICACION = "StreetBiteUbicacion";
 
-    // San Carlos, Ñuble. Centro por defecto cuando no hay GPS ni ubicación guardada.
-    private static final double SAN_CARLOS_LAT = -36.4248;
-    private static final double SAN_CARLOS_LON = -71.9581;
+    // San Carlos, Ñuble. Centro por defecto cuando no hay GPS local.
+    private static final double SAN_CARLOS_LAT = Foodtruck.SAN_CARLOS_LAT;
+    private static final double SAN_CARLOS_LON = Foodtruck.SAN_CARLOS_LON;
     private static final String CIUDAD_POR_DEFECTO = "San Carlos";
+
+    // Zoom inicial más cercano para distinguir locales cercanos entre sí.
+    private static final double ZOOM_INICIAL = 16.3;
+    private static final double ZOOM_ENFOQUE_LOCAL = 17.2;
 
     private MapView mapView;
     private MyLocationNewOverlay locationOverlay;
     private GeoPoint puntoUsuario;
+    private Location ubicacionReferencia = Foodtruck.ubicacionEnSanCarlos(null);
+    private boolean camaraInicializada = false;
+
+    // Tarjeta flotante inferior
+    private View cardDetalleMapa;
+    private ImageView imgMapaFoodtruck;
+    private TextView txtMapaNombre;
+    private TextView txtMapaDescripcion;
+    private TextView txtMapaRating;
+    private TextView txtMapaDistancia;
+    private TextView txtMapaEstado;
+    private TextView txtMapaDireccion;
+    private Button btnVerDetalleMapa;
+    private Foodtruck foodtruckSeleccionado;
 
     private final List<Marker> marcadores = new ArrayList<>();
 
@@ -58,21 +84,50 @@ public class MapActivity extends BaseActivity {
 
         setContentView(R.layout.activity_map);
 
-        // Vistas
+        // Vistas del mapa y controles
         mapView = findViewById(R.id.mapView);
         TextView btnVolverMapa = findViewById(R.id.btnVolverMapa);
         CardView btnMiUbicacion = findViewById(R.id.btnMiUbicacion);
 
-        // Configuración básica del mapa
+        // Vistas de la tarjeta inferior de detalle
+        cardDetalleMapa = findViewById(R.id.cardDetalleMapa);
+        imgMapaFoodtruck = findViewById(R.id.imgMapaFoodtruck);
+        txtMapaNombre = findViewById(R.id.txtMapaNombre);
+        txtMapaDescripcion = findViewById(R.id.txtMapaDescripcion);
+        txtMapaRating = findViewById(R.id.txtMapaRating);
+        txtMapaDistancia = findViewById(R.id.txtMapaDistancia);
+        txtMapaEstado = findViewById(R.id.txtMapaEstado);
+        txtMapaDireccion = findViewById(R.id.txtMapaDireccion);
+        btnVerDetalleMapa = findViewById(R.id.btnVerDetalleMapa);
+        View btnCerrarTarjeta = findViewById(R.id.btnCerrarTarjetaMapa);
+
+        // Configuración básica del mapa: centrado en San Carlos con zoom cercano
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setMultiTouchControls(true);
-        mapView.getController().setZoom(15.0);
+        mapView.getController().setZoom(ZOOM_INICIAL);
+        mapView.getController().setCenter(
+                new GeoPoint(SAN_CARLOS_LAT, SAN_CARLOS_LON)
+        );
 
-        // Volver
+        // Al tocar un área vacía del mapa se oculta la tarjeta
+        mapView.getOverlays().add(new MapEventsOverlay(new MapEventsReceiver() {
+            @Override
+            public boolean singleTapConfirmedHelper(GeoPoint p) {
+                ocultarTarjetaFoodtruck();
+                return false;
+            }
+
+            @Override
+            public boolean longPressHelper(GeoPoint p) {
+                return false;
+            }
+        }));
+
+        // Volver y acciones de tarjeta
         btnVolverMapa.setOnClickListener(v -> finish());
-
-        // Centrar en mi ubicación
         btnMiUbicacion.setOnClickListener(v -> centrarEnMiUbicacion());
+        btnCerrarTarjeta.setOnClickListener(v -> ocultarTarjetaFoodtruck());
+        btnVerDetalleMapa.setOnClickListener(v -> abrirDetalleSeleccionado());
 
         // Comprobar permisos
         if (tienePermisosUbicacion()) {
@@ -101,50 +156,65 @@ public class MapActivity extends BaseActivity {
 
     @SuppressLint("MissingPermission")
     private void iniciarUbicacion() {
-        if (locationOverlay == null) {
-            locationOverlay = new MyLocationNewOverlay(
-                    new GpsMyLocationProvider(this),
-                    mapView
-            );
-            mapView.getOverlays().add(locationOverlay);
+        if (tienePermisosUbicacion()) {
+            if (locationOverlay == null) {
+                locationOverlay = new MyLocationNewOverlay(
+                        new GpsMyLocationProvider(this),
+                        mapView
+                );
+                mapView.getOverlays().add(locationOverlay);
+            }
+            locationOverlay.enableMyLocation();
         }
 
-        locationOverlay.enableMyLocation();
-
-        // 1) PRIORIDAD: Ubicación seleccionada desde Home
+        // 1) PRIORIDAD: Ubicación seleccionada desde Home (solo si está en San Carlos)
         SharedPreferences prefsUbic = getSharedPreferences(PREFS_UBICACION, MODE_PRIVATE);
         boolean tieneGuardada = prefsUbic.contains("lat") && prefsUbic.contains("lon");
 
         if (tieneGuardada) {
             float latGuardada = prefsUbic.getFloat("lat", (float) SAN_CARLOS_LAT);
             float lonGuardada = prefsUbic.getFloat("lon", (float) SAN_CARLOS_LON);
-            String nombreGuardado = prefsUbic.getString("nombre", CIUDAD_POR_DEFECTO);
+            Location guardada = new Location("prefs");
+            guardada.setLatitude(latGuardada);
+            guardada.setLongitude(lonGuardada);
 
-            GeoPoint puntoGuardado = new GeoPoint((double) latGuardada, (double) lonGuardada);
-            mapView.getController().setCenter(puntoGuardado);
-            mapView.getController().setZoom(15.2);
-            Toast.makeText(this, "Mostrando " + nombreGuardado, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // 2) SI NO HAY SELECCIONADA: usar última ubicación GPS
-        LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
-        if (lm != null) {
-            Location mejor = obtenerUltimaUbicacion(lm);
-            if (mejor != null) {
-                puntoUsuario = new GeoPoint(mejor.getLatitude(), mejor.getLongitude());
-                mapView.getController().setCenter(puntoUsuario);
-                mapView.getController().setZoom(15.5);
-                Toast.makeText(this, "Centrado en tu ubicación actual", Toast.LENGTH_SHORT).show();
+            Location enSanCarlos = Foodtruck.ubicacionEnSanCarlos(guardada);
+            if (enSanCarlos == guardada) {
+                ubicacionReferencia = guardada;
+                GeoPoint puntoGuardado = new GeoPoint(
+                        (double) latGuardada, (double) lonGuardada);
+                mapView.getController().setZoom(ZOOM_INICIAL);
+                mapView.getController().setCenter(puntoGuardado);
+                camaraInicializada = true;
                 return;
             }
         }
 
-        // Fallback a San Carlos si no hay ubicación
+        // 2) SI HAY GPS: solo centrar si el usuario está dentro de San Carlos
+        Location mejor = null;
+        if (tienePermisosUbicacion()) {
+            LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
+            if (lm != null) {
+                mejor = obtenerUltimaUbicacion(lm);
+            }
+        }
+
+        Location valida = Foodtruck.ubicacionEnSanCarlos(mejor);
+        ubicacionReferencia = valida;
+
+        if (mejor != null && valida == mejor) {
+            puntoUsuario = new GeoPoint(mejor.getLatitude(), mejor.getLongitude());
+            mapView.getController().setZoom(ZOOM_INICIAL);
+            mapView.getController().setCenter(puntoUsuario);
+            camaraInicializada = true;
+            return;
+        }
+
+        // 3) Por defecto (o si el emulador/GPS está fuera de San Carlos): centro de San Carlos
         GeoPoint sanCarlos = new GeoPoint(SAN_CARLOS_LAT, SAN_CARLOS_LON);
+        mapView.getController().setZoom(ZOOM_INICIAL);
         mapView.getController().setCenter(sanCarlos);
-        mapView.getController().setZoom(15.0);
-        Toast.makeText(this, "Mostrando San Carlos. Activa tu ubicación para centrarte ahí.", Toast.LENGTH_SHORT).show();
+        camaraInicializada = true;
     }
 
     @SuppressLint("MissingPermission")
@@ -160,38 +230,36 @@ public class MapActivity extends BaseActivity {
     }
 
     private void centrarEnMiUbicacion() {
-        SharedPreferences prefsUbic = getSharedPreferences(PREFS_UBICACION, MODE_PRIVATE);
-        boolean tieneGuardada = prefsUbic.contains("lat") && prefsUbic.contains("lon");
-
-        if (tieneGuardada) {
-            float latGuardada = prefsUbic.getFloat("lat", (float) SAN_CARLOS_LAT);
-            float lonGuardada = prefsUbic.getFloat("lon", (float) SAN_CARLOS_LON);
-            String nombreGuardado = prefsUbic.getString("nombre", CIUDAD_POR_DEFECTO);
-            GeoPoint puntoGuardado = new GeoPoint((double) latGuardada, (double) lonGuardada);
-            mapView.getController().animateTo(puntoGuardado);
-            mapView.getController().setZoom(15.8);
-            Toast.makeText(this, "Centrado en " + nombreGuardado, Toast.LENGTH_SHORT).show();
-            return;
+        GeoPoint gpsLocal = null;
+        if (locationOverlay != null && locationOverlay.getMyLocation() != null) {
+            GeoPoint candidato = locationOverlay.getMyLocation();
+            Location loc = new Location("overlay");
+            loc.setLatitude(candidato.getLatitude());
+            loc.setLongitude(candidato.getLongitude());
+            if (Foodtruck.ubicacionEnSanCarlos(loc) == loc) {
+                gpsLocal = candidato;
+                ubicacionReferencia = loc;
+            }
         }
 
-        if (locationOverlay != null && locationOverlay.getMyLocation() != null) {
-            mapView.getController().animateTo(locationOverlay.getMyLocation());
-            mapView.getController().setZoom(16.0);
-            Toast.makeText(this, "Centrado en tu ubicación GPS", Toast.LENGTH_SHORT).show();
+        if (gpsLocal != null) {
+            mapView.getController().animateTo(gpsLocal, ZOOM_ENFOQUE_LOCAL, 350L);
+            Toast.makeText(this, "Centrado en tu ubicación", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (puntoUsuario != null) {
-            mapView.getController().animateTo(puntoUsuario);
-            mapView.getController().setZoom(16.0);
+            mapView.getController().animateTo(puntoUsuario, ZOOM_ENFOQUE_LOCAL, 350L);
             return;
         }
 
-        if (tienePermisosUbicacion()) {
-            iniciarUbicacion();
-        } else {
-            solicitarPermisosUbicacion();
-        }
+        GeoPoint centroSanCarlos = new GeoPoint(SAN_CARLOS_LAT, SAN_CARLOS_LON);
+        mapView.getController().animateTo(centroSanCarlos, ZOOM_INICIAL, 350L);
+        Toast.makeText(
+                this,
+                "Centrado en " + CIUDAD_POR_DEFECTO,
+                Toast.LENGTH_SHORT
+        ).show();
     }
 
     private void cargarFoodtrucks() {
@@ -201,16 +269,11 @@ public class MapActivity extends BaseActivity {
     }
 
     private void añadirMarcadoresFoodtrucks() {
-        // Quita solo los marcadores anteriores, no la capa de ubicación.
+        // Quita solo los marcadores anteriores, no la capa de ubicación ni eventos.
         mapView.getOverlays().removeAll(marcadores);
         marcadores.clear();
 
         List<Foodtruck> lista = FoodtruckRepositorio.obtenerTodos();
-
-        double minLat = Double.MAX_VALUE;
-        double maxLat = -Double.MAX_VALUE;
-        double minLon = Double.MAX_VALUE;
-        double maxLon = -Double.MAX_VALUE;
 
         // OJO: cada Marker necesita su PROPIO Drawable. Si se comparte la misma
         // instancia, osmdroid le cambia los bounds a todos a la vez y termina
@@ -219,36 +282,142 @@ public class MapActivity extends BaseActivity {
             Marker marker = new Marker(mapView);
             marker.setPosition(new GeoPoint(f.lat, f.lon));
             marker.setTitle(f.nombre);
-            marker.setSubDescription(f.descripcion + " • " + f.ratingTexto() + " • " + f.estadoTexto());
+            marker.setInfoWindow(null);
             marker.setIcon(crearIconoMarcador());
             marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER);
-            marker.setOnMarkerClickListener((m, mapView) -> {
-                m.showInfoWindow();
-                mapView.getController().animateTo(m.getPosition());
+            marker.setOnMarkerClickListener((m, mv) -> {
+                mostrarTarjetaFoodtruck(f);
+                double zoomDestino = Math.max(
+                        mv.getZoomLevelDouble(),
+                        ZOOM_ENFOQUE_LOCAL
+                );
+                mv.getController().animateTo(
+                        m.getPosition(),
+                        zoomDestino,
+                        350L
+                );
                 return true;
             });
             mapView.getOverlays().add(marker);
             marcadores.add(marker);
-
-            minLat = Math.min(minLat, f.lat);
-            maxLat = Math.max(maxLat, f.lat);
-            minLon = Math.min(minLon, f.lon);
-            maxLon = Math.max(maxLon, f.lon);
-        }
-
-        // Encuadra todos los locales para que ninguno quede fuera de pantalla.
-        if (!marcadores.isEmpty()) {
-            int margenPx = Math.round(56f * getResources().getDisplayMetrics().density);
-            final BoundingBox encuadre = new BoundingBox(maxLat, maxLon, minLat, minLon);
-
-            // Se hace en un post para que el MapView ya tenga tamaño medido.
-            mapView.post(() -> {
-                mapView.zoomToBoundingBox(encuadre, false, margenPx);
-                mapView.invalidate();
-            });
         }
 
         mapView.invalidate();
+    }
+
+    private void mostrarTarjetaFoodtruck(Foodtruck f) {
+        if (f == null || cardDetalleMapa == null) {
+            return;
+        }
+
+        foodtruckSeleccionado = f;
+
+        txtMapaNombre.setText(f.nombre);
+        txtMapaDescripcion.setText(f.descripcion);
+        txtMapaRating.setText(f.ratingTexto());
+        txtMapaDistancia.setText(f.distanciaTexto(ubicacionReferencia));
+
+        txtMapaEstado.setText(f.estadoTexto());
+        int colorEstado = getColor(f.abierto ? R.color.sb_verde : R.color.sb_rojo);
+        txtMapaEstado.setTextColor(colorEstado);
+        txtMapaEstado.setBackgroundResource(
+                f.abierto ? R.drawable.bg_badge_abierto : R.drawable.bg_badge_cerrado
+        );
+        txtMapaEstado.setCompoundDrawableTintList(
+                ColorStateList.valueOf(colorEstado)
+        );
+
+        if (f.direccion == null || f.direccion.trim().isEmpty()) {
+            txtMapaDireccion.setVisibility(View.GONE);
+        } else {
+            txtMapaDireccion.setText(f.direccion.trim());
+            txtMapaDireccion.setVisibility(View.VISIBLE);
+        }
+
+        if (!f.logoNombre.isEmpty()) {
+            int pad = Math.round(5f * getResources().getDisplayMetrics().density);
+            imgMapaFoodtruck.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            imgMapaFoodtruck.setPadding(pad, pad, pad, pad);
+            Imagenes.cargar(imgMapaFoodtruck, f.logoNombre, 96, 96);
+        } else {
+            imgMapaFoodtruck.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            imgMapaFoodtruck.setPadding(0, 0, 0, 0);
+            imgMapaFoodtruck.setImageResource(f.imagen);
+        }
+
+        boolean estabaOculta = cardDetalleMapa.getVisibility() != View.VISIBLE;
+        cardDetalleMapa.setVisibility(View.VISIBLE);
+
+        if (estabaOculta && ValueAnimator.areAnimatorsEnabled()) {
+            float desplazamiento = 14f * getResources().getDisplayMetrics().density;
+            cardDetalleMapa.animate().cancel();
+            cardDetalleMapa.setAlpha(0f);
+            cardDetalleMapa.setTranslationY(desplazamiento);
+            cardDetalleMapa.animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setDuration(200L)
+                    .setInterpolator(Animaciones.CURVA_SUAVE)
+                    .withLayer()
+                    .start();
+        } else {
+            cardDetalleMapa.setAlpha(1f);
+            cardDetalleMapa.setTranslationY(0f);
+        }
+    }
+
+    private void ocultarTarjetaFoodtruck() {
+        if (cardDetalleMapa == null
+                || cardDetalleMapa.getVisibility() != View.VISIBLE) {
+            return;
+        }
+
+        foodtruckSeleccionado = null;
+
+        if (!ValueAnimator.areAnimatorsEnabled()) {
+            cardDetalleMapa.setVisibility(View.GONE);
+            return;
+        }
+
+        float desplazamiento = 10f * getResources().getDisplayMetrics().density;
+        cardDetalleMapa.animate().cancel();
+        cardDetalleMapa.animate()
+                .alpha(0f)
+                .translationY(desplazamiento)
+                .setDuration(150L)
+                .setInterpolator(Animaciones.CURVA_SUAVE)
+                .withEndAction(() -> {
+                    cardDetalleMapa.setVisibility(View.GONE);
+                    cardDetalleMapa.setAlpha(1f);
+                    cardDetalleMapa.setTranslationY(0f);
+                })
+                .start();
+    }
+
+    private void abrirDetalleSeleccionado() {
+        if (foodtruckSeleccionado == null) {
+            return;
+        }
+
+        String clave = foodtruckSeleccionado.id.isEmpty()
+                ? foodtruckSeleccionado.nombre
+                : foodtruckSeleccionado.id;
+        String transicion = "foto_" + clave;
+        imgMapaFoodtruck.setTransitionName(transicion);
+
+        Intent intent = foodtruckSeleccionado.crearIntentDetalle(
+                this,
+                ubicacionReferencia
+        );
+        intent.putExtra("transicion_foto", transicion);
+
+        ActivityOptionsCompat opciones =
+                ActivityOptionsCompat.makeSceneTransitionAnimation(
+                        this,
+                        imgMapaFoodtruck,
+                        transicion
+                );
+        startActivity(intent, opciones.toBundle());
     }
 
     /**
@@ -257,7 +426,7 @@ public class MapActivity extends BaseActivity {
      */
     private Drawable crearIconoMarcador() {
         int tamanoPx = Math.round(
-                40f * getResources().getDisplayMetrics().density
+                36f * getResources().getDisplayMetrics().density
         );
 
         Bitmap bitmap = Bitmap.createBitmap(
@@ -282,12 +451,7 @@ public class MapActivity extends BaseActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISOS_UBICACION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                iniciarUbicacion();
-            } else {
-                Toast.makeText(this, "Sin permiso de ubicación. Usando la ubicación seleccionada o San Carlos.", Toast.LENGTH_SHORT).show();
-                iniciarUbicacion();
-            }
+            iniciarUbicacion();
         }
     }
 
@@ -297,8 +461,9 @@ public class MapActivity extends BaseActivity {
         if (mapView != null) {
             mapView.onResume();
         }
-        // Al volver desde Home se vuelve a centrar con la ubicación actual seleccionada
-        iniciarUbicacion();
+        if (!camaraInicializada) {
+            iniciarUbicacion();
+        }
     }
 
     @Override

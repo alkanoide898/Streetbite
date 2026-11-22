@@ -6,14 +6,11 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.DecelerateInterpolator;
-import android.view.animation.OvershootInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
-import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -36,13 +33,13 @@ public class FoodtruckAdapter
         void alHacerClick(Foodtruck foodtruck, View foto);
     }
 
-    // Entrada: solo las primeras tarjetas y con un retraso pequeño.
+    // Entrada sincronizada: las primeras tarjetas aparecen juntas sin cascada lenta.
     private static final int MAX_ENTRADA = 6;
-    private static final long RETRASO_ENTRADA_MS = 55L;
-    private static final long DURACION_ENTRADA_MS = 220L;
-    private static final float DESPLAZAMIENTO_ENTRADA_DP = 14f;
+    private static final long RETRASO_ENTRADA_MS = 0L;
+    private static final long DURACION_ENTRADA_MS = 200L;
+    private static final float DESPLAZAMIENTO_ENTRADA_DP = 8f;
 
-    private static final float ESCALA_PRESIONADO = 0.97f;
+    private static final float ESCALA_PRESIONADO = 0.98f;
 
     @LayoutRes
     private final int layoutRes;
@@ -126,8 +123,17 @@ public class FoodtruckAdapter
 
         if (holder.estado != null) {
             holder.estado.setText(foodtruck.estadoTexto());
-            holder.estado.setTextColor(
-                    foodtruck.abierto ? 0xFF4CAF50 : 0xFFD32F2F
+            int colorEstado = holder.estado.getContext().getColor(
+                    foodtruck.abierto ? R.color.sb_verde : R.color.sb_rojo
+            );
+            holder.estado.setTextColor(colorEstado);
+            holder.estado.setBackgroundResource(
+                    foodtruck.abierto
+                            ? R.drawable.bg_badge_abierto
+                            : R.drawable.bg_badge_cerrado
+            );
+            holder.estado.setCompoundDrawableTintList(
+                    android.content.res.ColorStateList.valueOf(colorEstado)
             );
         }
 
@@ -196,9 +202,9 @@ public class FoodtruckAdapter
         vista.animate()
                 .alpha(1f)
                 .translationY(0f)
-                .setStartDelay(posicion * RETRASO_ENTRADA_MS)
                 .setDuration(DURACION_ENTRADA_MS)
-                .setInterpolator(new DecelerateInterpolator())
+                .setInterpolator(Animaciones.CURVA_SUAVE)
+                .withLayer()
                 .start();
     }
 
@@ -320,49 +326,38 @@ public class FoodtruckAdapter
         }
 
         /**
-         * Encoge la tarjeta al presionar y la devuelve con un rebote leve.
-         * Devuelve false para no consumir el toque: el click y el sonido
-         * siguen funcionando igual.
+         * Encoge suavemente la tarjeta al presionar sin re-rasterizar sombras
+         * dinámicas. Devuelve false para no consumir el toque ni el sonido.
          */
         private static void prepararPresion(final View vista) {
 
-            final float elevacionNormal = vista instanceof CardView
-                    ? ((CardView) vista).getCardElevation()
-                    : 0f;
-
-            final float elevacionPresionada =
-                    elevacionNormal + dp(vista, 3f);
-
             vista.setOnTouchListener((v, evento) -> {
+
+                if (!ValueAnimator.areAnimatorsEnabled()) {
+                    return false;
+                }
 
                 switch (evento.getActionMasked()) {
 
                     case MotionEvent.ACTION_DOWN:
+                        v.animate().cancel();
                         v.animate()
                                 .scaleX(ESCALA_PRESIONADO)
                                 .scaleY(ESCALA_PRESIONADO)
-                                .setDuration(90)
-                                .setInterpolator(new DecelerateInterpolator())
+                                .setDuration(80)
+                                .setInterpolator(Animaciones.CURVA_SUAVE)
                                 .start();
-
-                        if (v instanceof CardView) {
-                            ((CardView) v).setCardElevation(
-                                    elevacionPresionada);
-                        }
                         break;
 
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
+                        v.animate().cancel();
                         v.animate()
                                 .scaleX(1f)
                                 .scaleY(1f)
-                                .setDuration(180)
-                                .setInterpolator(new OvershootInterpolator(1.2f))
+                                .setDuration(140)
+                                .setInterpolator(Animaciones.CURVA_SUAVE)
                                 .start();
-
-                        if (v instanceof CardView) {
-                            ((CardView) v).setCardElevation(elevacionNormal);
-                        }
                         break;
 
                     default:

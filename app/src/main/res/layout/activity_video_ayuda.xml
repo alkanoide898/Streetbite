@@ -18,9 +18,9 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingStart="16dp"
-            android:paddingTop="18dp"
+            android:paddingTop="16dp"
             android:paddingEnd="16dp"
-            android:paddingBottom="30dp">
+            android:paddingBottom="32dp">
 
             <!-- VOLVER -->
             <TextView
@@ -28,29 +28,33 @@
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:gravity="center"
-                android:paddingStart="4dp"
+                android:drawablePadding="6dp"
+                android:gravity="center_vertical"
+                android:paddingStart="2dp"
                 android:paddingEnd="14dp"
-                android:text="← Volver"
+                android:text="Volver"
                 android:textColor="@color/sb_texto_suave"
                 android:textSize="15sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                app:drawableStartCompat="@drawable/ic_arrow_back"
+                app:drawableTint="@color/sb_texto_suave" />
 
             <!-- TÍTULO -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="10dp"
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="-0.02"
                 android:text="Cómo funciona StreetBite"
                 android:textColor="@color/sb_marron"
-                android:textSize="26sp"
-                android:textStyle="bold" />
+                android:textSize="25sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="Un recorrido rápido por la app"
+                android:text="Un recorrido rápido por la aplicación"
                 android:textColor="@color/sb_texto_suave"
                 android:textSize="14sp" />
 
@@ -58,16 +62,15 @@
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                app:cardBackgroundColor="#3E2723"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="4dp"
-                app:cardUseCompatPadding="true">
+                android:layout_marginTop="18dp"
+                app:cardBackgroundColor="#0B0A0C"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp">
 
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="520dp"
-                    android:background="#3E2723">
+                    android:layout_height="440dp"
+                    android:background="#0B0A0C">
 
                     <VideoView
                         android:id="@+id/videoRecorrido"
@@ -82,8 +85,9 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Toca el video para mostrar los controles y pausarlo o avanzarlo."
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="8dp"
+                android:text="Toca el video para mostrar los controles de reproducción."
                 android:textColor="@color/sb_texto_suave"
                 android:textSize="12sp" />
 
@@ -91,6 +95,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
                 android:layout_marginTop="24dp"
                 android:text="Lo que vas a ver"
                 android:textColor="@color/sb_marron"
@@ -100,53 +105,181 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="vertical">
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_tarjeta_borde"
+                android:elevation="1dp"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-                <TextView
+                <!-- PASO 1 -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:text="1. Explora los foodtrucks de San Carlos y mira cuáles están abiertos."
-                    android:textColor="@color/sb_texto"
-                    android:textSize="14sp" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="10dp">
 
-                <TextView
+                    <TextView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/bg_circulo_icono"
+                        android:gravity="center"
+                        android:text="1"
+                        android:textColor="@color/sb_naranja_oscuro"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:lineSpacingExtra="2dp"
+                        android:text="Explora los foodtrucks de San Carlos y revisa cuáles están abiertos."
+                        android:textColor="@color/sb_texto"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/sb_divisor" />
+
+                <!-- PASO 2 -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:text="2. Busca por nombre, elige una categoría o activa Solo foodtrucks abiertos."
-                    android:textColor="@color/sb_texto"
-                    android:textSize="14sp" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp">
 
-                <TextView
+                    <TextView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/bg_circulo_icono"
+                        android:gravity="center"
+                        android:text="2"
+                        android:textColor="@color/sb_naranja_oscuro"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:lineSpacingExtra="2dp"
+                        android:text="Busca por nombre, elige una categoría o activa Solo foodtrucks abiertos."
+                        android:textColor="@color/sb_texto"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/sb_divisor" />
+
+                <!-- PASO 3 -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:text="3. Abre un local: ahí están su logo, el menú de fotos y sus datos."
-                    android:textColor="@color/sb_texto"
-                    android:textSize="14sp" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp">
 
-                <TextView
+                    <TextView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/bg_circulo_icono"
+                        android:gravity="center"
+                        android:text="3"
+                        android:textColor="@color/sb_naranja_oscuro"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:lineSpacingExtra="2dp"
+                        android:text="Abre un local para ver su logo, el menú de fotos, su ubicación y contacto."
+                        android:textColor="@color/sb_texto"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/sb_divisor" />
+
+                <!-- PASO 4 -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:text="4. Toca una foto del menú para ampliarla y recorre el detalle hasta el final."
-                    android:textColor="@color/sb_texto"
-                    android:textSize="14sp" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="10dp">
 
-                <TextView
+                    <TextView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/bg_circulo_icono"
+                        android:gravity="center"
+                        android:text="4"
+                        android:textColor="@color/sb_naranja_oscuro"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:lineSpacingExtra="2dp"
+                        android:text="Toca una foto del menú para ampliarla o guarda el local en tus favoritos."
+                        android:textColor="@color/sb_texto"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/sb_divisor" />
+
+                <!-- PASO 5 -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="8dp"
-                    android:text="5. Mira el mapa y, desde Perfil, edita tu información en Mi información."
-                    android:textColor="@color/sb_texto"
-                    android:textSize="14sp" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="4dp">
+
+                    <TextView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/bg_circulo_icono"
+                        android:gravity="center"
+                        android:text="5"
+                        android:textColor="@color/sb_naranja_oscuro"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:lineSpacingExtra="2dp"
+                        android:text="Revisa el mapa y gestiona tu perfil y favoritos desde la pantalla Perfil."
+                        android:textColor="@color/sb_texto"
+                        android:textSize="14sp" />
+                </LinearLayout>
             </LinearLayout>
 
         </LinearLayout>
