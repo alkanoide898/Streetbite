@@ -128,6 +128,16 @@ public class MapActivity extends BaseActivity {
         btnMiUbicacion.setOnClickListener(v -> centrarEnMiUbicacion());
         btnCerrarTarjeta.setOnClickListener(v -> ocultarTarjetaFoodtruck());
         btnVerDetalleMapa.setOnClickListener(v -> abrirDetalleSeleccionado());
+        findViewById(R.id.btnComoLlegarMapa).setOnClickListener(v -> {
+            if (foodtruckSeleccionado != null) {
+                Foodtruck.abrirComoLlegar(
+                        this,
+                        foodtruckSeleccionado.lat,
+                        foodtruckSeleccionado.lon,
+                        foodtruckSeleccionado.nombre
+                );
+            }
+        });
 
         // Comprobar permisos
         if (tienePermisosUbicacion()) {

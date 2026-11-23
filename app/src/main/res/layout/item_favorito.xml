@@ -14,11 +14,36 @@
     app:cardPreventCornerOverlap="false">
 
     <LinearLayout
+        android:id="@+id/contenedorTarjetaFavorito"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_tarjeta_borde"
         android:orientation="vertical"
         android:padding="14dp">
+
+        <!-- BANNER DISTINTIVO PARA FAVORITOS COMPARTIDOS -->
+        <TextView
+            android:id="@+id/txtFavoritoCompartido"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/bg_banner_compartido"
+            android:drawablePadding="7dp"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:paddingStart="10dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="6dp"
+            android:textColor="@color/sb_ambar"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:drawableStartCompat="@drawable/ic_group"
+            app:drawableTint="@color/sb_ambar"
+            tools:text="En conjunto con Carlos"
+            tools:visibility="visible" />
 
         <!-- FILA SUPERIOR: LOGO + DATOS DEL FOODTRUCK -->
         <LinearLayout
@@ -143,7 +168,7 @@
             android:layout_marginTop="12dp"
             android:background="@color/sb_divisor" />
 
-        <!-- ACCIONES CRUD: EDITAR Y QUITAR -->
+        <!-- ACCIONES CRUD: COMPARTIR, EDITAR Y QUITAR -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -152,9 +177,26 @@
             android:orientation="horizontal">
 
             <TextView
+                android:id="@+id/btnCompartirFavorito"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="?attr/selectableItemBackground"
+                android:drawablePadding="5dp"
+                android:gravity="center"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="Compartir"
+                android:textColor="@color/sb_marron_suave"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:drawableStartCompat="@drawable/ic_group"
+                app:drawableTint="@color/sb_marron_suave" />
+
+            <TextView
                 android:id="@+id/btnEditarFavorito"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
+                android:layout_marginStart="4dp"
                 android:background="?attr/selectableItemBackground"
                 android:drawablePadding="5dp"
                 android:gravity="center"
@@ -171,7 +213,7 @@
                 android:id="@+id/btnQuitarFavorito"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="4dp"
                 android:background="?attr/selectableItemBackground"
                 android:drawablePadding="5dp"
                 android:gravity="center"

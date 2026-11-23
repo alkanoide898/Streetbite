@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -26,6 +27,7 @@ public class DetalleFoodtruckActivity extends BaseActivity {
     private TextView btnFavoritoDetalle;
     private View bloqueFavoritoDetalle;
     private TextView txtEtiquetaFavoritoDetalle;
+    private TextView txtCompartidoFavoritoDetalle;
     private TextView txtNotaFavoritoDetalle;
 
     /** La foto entra con una transición compartida desde la tarjeta. */
@@ -54,6 +56,7 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         btnFavoritoDetalle = findViewById(R.id.btnFavoritoDetalle);
         bloqueFavoritoDetalle = findViewById(R.id.bloqueFavoritoDetalle);
         txtEtiquetaFavoritoDetalle = findViewById(R.id.txtEtiquetaFavoritoDetalle);
+        txtCompartidoFavoritoDetalle = findViewById(R.id.txtCompartidoFavoritoDetalle);
         txtNotaFavoritoDetalle = findViewById(R.id.txtNotaFavoritoDetalle);
         TextView btnEditarFavoritoDetalle = findViewById(R.id.btnEditarFavoritoDetalle);
         TextView txtMenuVacio = findViewById(R.id.txtMenuVacio);
@@ -81,6 +84,17 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         String logo = getIntent().getStringExtra("logo");
         String[] menu = getIntent().getStringArrayExtra("menu");
         int imagen = getIntent().getIntExtra("imagen", R.drawable.tacos);
+        double lat = getIntent().getDoubleExtra("lat", 0.0);
+        double lon = getIntent().getDoubleExtra("lon", 0.0);
+
+        Button btnComoLlegar = findViewById(R.id.btnComoLlegarDetalle);
+        if (lat == 0.0 && lon == 0.0) {
+            btnComoLlegar.setVisibility(View.GONE);
+        } else {
+            btnComoLlegar.setOnClickListener(v ->
+                    Foodtruck.abrirComoLlegar(this, lat, lon, nombreLocal)
+            );
+        }
 
         // Asignar datos
         if (nombre != null) {
@@ -252,6 +266,7 @@ public class DetalleFoodtruckActivity extends BaseActivity {
                 idLocal,
                 etiqueta,
                 nota,
+                Sesion.nombre(this),
                 new SupabaseHelper.FavoritoCallback() {
                     @Override
                     public void onSuccess(Favorito creado) {
@@ -396,6 +411,18 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         txtEtiquetaFavoritoDetalle.setText(
                 "En tus favoritos · " + favoritoActual.etiqueta
         );
+
+        if (favoritoActual.estaCompartido()) {
+            String companero = favoritoActual.nombreCompanero(
+                    Sesion.usuarioId(this)
+            );
+            txtCompartidoFavoritoDetalle.setText(
+                    "En conjunto con " + companero
+            );
+            txtCompartidoFavoritoDetalle.setVisibility(View.VISIBLE);
+        } else {
+            txtCompartidoFavoritoDetalle.setVisibility(View.GONE);
+        }
 
         if (favoritoActual.nota.isEmpty()) {
             txtNotaFavoritoDetalle.setVisibility(View.GONE);

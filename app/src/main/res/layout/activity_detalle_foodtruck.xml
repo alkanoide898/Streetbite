@@ -265,6 +265,26 @@
                     tools:text="@local"
                     tools:visibility="visible" />
 
+                <!-- BOTÓN CÓMO LLEGAR -->
+                <Button
+                    android:id="@+id/btnComoLlegarDetalle"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_boton_primario"
+                    android:drawablePadding="8dp"
+                    android:gravity="center"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:stateListAnimator="@null"
+                    android:text="Cómo llegar"
+                    android:textAllCaps="false"
+                    android:textColor="@color/sb_texto_sobre_acento"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    app:drawableStartCompat="@drawable/ic_directions"
+                    app:drawableTint="@color/sb_texto_sobre_acento" />
+
                 <!-- RESUMEN DE FAVORITO PERSONAL -->
                 <LinearLayout
                     android:id="@+id/bloqueFavoritoDetalle"
@@ -310,6 +330,21 @@
                             android:textSize="13sp"
                             android:textStyle="bold" />
                     </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/txtCompartidoFavoritoDetalle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:drawablePadding="6dp"
+                        android:gravity="center_vertical"
+                        android:textColor="@color/sb_naranja"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        app:drawableStartCompat="@drawable/ic_group"
+                        app:drawableTint="@color/sb_naranja"
+                        tools:text="En conjunto con Carlos" />
 
                     <TextView
                         android:id="@+id/txtNotaFavoritoDetalle"

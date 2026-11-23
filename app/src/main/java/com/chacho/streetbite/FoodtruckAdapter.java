@@ -1,6 +1,7 @@
 package com.chacho.streetbite;
 
 import android.animation.ValueAnimator;
+import android.content.res.ColorStateList;
 import android.location.Location;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -11,20 +12,15 @@ import android.widget.TextView;
 
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Locale;
 
 /**
  * Adaptador compartido por la lista vertical y la fila de destacados.
  * El layout de cada ítem decide qué vistas existen.
- *
- * Incluye las animaciones de la lista: entrada escalonada de las primeras
- * tarjetas, feedback al presionar y transición compartida hacia el detalle.
  */
 public class FoodtruckAdapter
         extends RecyclerView.Adapter<FoodtruckAdapter.FoodtruckViewHolder> {
@@ -33,11 +29,9 @@ public class FoodtruckAdapter
         void alHacerClick(Foodtruck foodtruck, View foto);
     }
 
-    // Entrada sincronizada: las primeras tarjetas aparecen juntas sin cascada lenta.
-    private static final int MAX_ENTRADA = 6;
-    private static final long RETRASO_ENTRADA_MS = 0L;
-    private static final long DURACION_ENTRADA_MS = 200L;
-    private static final float DESPLAZAMIENTO_ENTRADA_DP = 8f;
+    public interface OnCompartirClick {
+        void alCompartir(Foodtruck foodtruck);
+    }
 
     private static final float ESCALA_PRESIONADO = 0.98f;
 
@@ -45,13 +39,11 @@ public class FoodtruckAdapter
     private final int layoutRes;
 
     private final OnFoodtruckClick listener;
+    private OnCompartirClick compartirListener;
 
     private List<Foodtruck> datos = new ArrayList<>();
 
     private Location ubicacion;
-
-    // Evita repetir la entrada cuando la tarjeta se recicla o se filtra.
-    private final Set<String> yaAnimados = new HashSet<>();
 
     public FoodtruckAdapter(@LayoutRes int layoutRes,
                             OnFoodtruckClick listener) {
@@ -60,25 +52,21 @@ public class FoodtruckAdapter
         setHasStableIds(true);
     }
 
+    public void setOnCompartirClick(OnCompartirClick compartirListener) {
+        this.compartirListener = compartirListener;
+    }
+
     /**
-     * Actualiza la lista con DiffUtil: así RecyclerView anima los cambios de
-     * los filtros en vez de reemplazar todo de golpe con notifyDataSetChanged.
+     * Reemplaza los datos y notifica de inmediato para que el RecyclerView
+     * dentro de NestedScrollView siempre recalcule la altura exacta sin
+     * ocultar ni recortar tarjetas al cambiar de categoría.
      */
     public void actualizar(List<Foodtruck> foodtrucks, Location ubicacion) {
-
-        List<Foodtruck> nuevos = foodtrucks == null
+        datos = foodtrucks == null
                 ? new ArrayList<>()
                 : new ArrayList<>(foodtrucks);
-
-        DiffUtil.DiffResult resultado = DiffUtil.calculateDiff(
-                new Diferencia(datos, this.ubicacion, nuevos, ubicacion),
-                true
-        );
-
-        datos = nuevos;
         this.ubicacion = ubicacion;
-
-        resultado.dispatchUpdatesTo(this);
+        notifyDataSetChanged();
     }
 
     @Override
@@ -117,6 +105,16 @@ public class FoodtruckAdapter
             holder.descripcion.setText(foodtruck.descripcion);
         }
 
+        if (holder.categorias != null) {
+            String resumenCategorias = formatearCategorias(foodtruck);
+            if (resumenCategorias.isEmpty()) {
+                holder.categorias.setVisibility(View.GONE);
+            } else {
+                holder.categorias.setText(resumenCategorias);
+                holder.categorias.setVisibility(View.VISIBLE);
+            }
+        }
+
         if (holder.distancia != null) {
             holder.distancia.setText(foodtruck.distanciaTexto(ubicacion));
         }
@@ -133,21 +131,50 @@ public class FoodtruckAdapter
                             : R.drawable.bg_badge_cerrado
             );
             holder.estado.setCompoundDrawableTintList(
-                    android.content.res.ColorStateList.valueOf(colorEstado)
+                    ColorStateList.valueOf(colorEstado)
             );
         }
 
-        // Si la vista se recicla a mitad de una animación, vuelve a su estado.
+        holder.itemView.animate().cancel();
+        holder.itemView.setAlpha(1f);
+        holder.itemView.setTranslationY(0f);
         holder.itemView.setScaleX(1f);
         holder.itemView.setScaleY(1f);
-
-        animarEntrada(holder.itemView, position, foodtruck);
 
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.alHacerClick(foodtruck, holder.imagen);
             }
         });
+
+        if (holder.btnCompartir != null) {
+            holder.btnCompartir.setOnClickListener(v -> {
+                if (compartirListener != null) {
+                    compartirListener.alCompartir(foodtruck);
+                }
+            });
+        }
+    }
+
+    private static String formatearCategorias(Foodtruck foodtruck) {
+        List<String> cats = foodtruck.categorias();
+        if (cats.isEmpty()) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < cats.size(); i++) {
+            String cat = cats.get(i).trim();
+            if (cat.isEmpty()) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append(" · ");
+            }
+            sb.append(cat.substring(0, 1).toUpperCase(Locale.getDefault()))
+                    .append(cat.substring(1));
+        }
+        return sb.toString();
     }
 
     /**
@@ -178,46 +205,6 @@ public class FoodtruckAdapter
         );
     }
 
-    /** Fade + subida leve, con un pequeño retraso por posición. */
-    private void animarEntrada(View vista, int posicion, Foodtruck foodtruck) {
-
-        String clave = clave(foodtruck);
-
-        boolean puedeAnimar = posicion < MAX_ENTRADA
-                && !yaAnimados.contains(clave)
-                && estaQuieto(vista)
-                && ValueAnimator.areAnimatorsEnabled();
-
-        if (!puedeAnimar) {
-            vista.setAlpha(1f);
-            vista.setTranslationY(0f);
-            return;
-        }
-
-        yaAnimados.add(clave);
-
-        vista.setAlpha(0f);
-        vista.setTranslationY(dp(vista, DESPLAZAMIENTO_ENTRADA_DP));
-
-        vista.animate()
-                .alpha(1f)
-                .translationY(0f)
-                .setDuration(DURACION_ENTRADA_MS)
-                .setInterpolator(Animaciones.CURVA_SUAVE)
-                .withLayer()
-                .start();
-    }
-
-    /**
-     * No animar mientras el usuario hace scroll: se vería como un parpadeo
-     * en tarjetas que entran y salen de pantalla.
-     */
-    private boolean estaQuieto(View vista) {
-        return !(vista.getParent() instanceof RecyclerView)
-                || ((RecyclerView) vista.getParent()).getScrollState()
-                == RecyclerView.SCROLL_STATE_IDLE;
-    }
-
     @Override
     public void onViewRecycled(@NonNull FoodtruckViewHolder holder) {
         super.onViewRecycled(holder);
@@ -245,72 +232,16 @@ public class FoodtruckAdapter
         return valor * vista.getResources().getDisplayMetrics().density;
     }
 
-    /** Compara listas para que RecyclerView anime altas, bajas y movimientos. */
-    private static final class Diferencia extends DiffUtil.Callback {
-
-        private final List<Foodtruck> viejos;
-        private final Location ubicacionVieja;
-        private final List<Foodtruck> nuevos;
-        private final Location ubicacionNueva;
-
-        Diferencia(List<Foodtruck> viejos,
-                   Location ubicacionVieja,
-                   List<Foodtruck> nuevos,
-                   Location ubicacionNueva) {
-            this.viejos = viejos;
-            this.ubicacionVieja = ubicacionVieja;
-            this.nuevos = nuevos;
-            this.ubicacionNueva = ubicacionNueva;
-        }
-
-        @Override
-        public int getOldListSize() {
-            return viejos.size();
-        }
-
-        @Override
-        public int getNewListSize() {
-            return nuevos.size();
-        }
-
-        @Override
-        public boolean areItemsTheSame(int viejo, int nuevo) {
-            Foodtruck a = viejos.get(viejo);
-            Foodtruck b = nuevos.get(nuevo);
-
-            if (!a.id.isEmpty() && !b.id.isEmpty()) {
-                return a.id.equals(b.id);
-            }
-
-            return a.nombre.equals(b.nombre);
-        }
-
-        @Override
-        public boolean areContentsTheSame(int viejo, int nuevo) {
-            Foodtruck a = viejos.get(viejo);
-            Foodtruck b = nuevos.get(nuevo);
-
-            return a.nombre.equals(b.nombre)
-                    && a.descripcion.equals(b.descripcion)
-                    && a.categoria.equals(b.categoria)
-                    && Double.compare(a.rating, b.rating) == 0
-                    && a.abierto == b.abierto
-                    && a.imagen == b.imagen
-                    && a.logoNombre.equals(b.logoNombre)
-                    && a.menu.equals(b.menu)
-                    && a.distanciaTexto(ubicacionVieja)
-                    .equals(b.distanciaTexto(ubicacionNueva));
-        }
-    }
-
     static class FoodtruckViewHolder extends RecyclerView.ViewHolder {
 
         final ImageView imagen;
         final TextView nombre;
         final TextView descripcion;
+        final TextView categorias;
         final TextView rating;
         final TextView distancia;
         final TextView estado;
+        final View btnCompartir;
 
         FoodtruckViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -318,9 +249,11 @@ public class FoodtruckAdapter
             imagen = itemView.findViewById(R.id.imgFoodtruck);
             nombre = itemView.findViewById(R.id.txtNombreFoodtruck);
             descripcion = itemView.findViewById(R.id.txtDescripcionFoodtruck);
+            categorias = itemView.findViewById(R.id.txtCategoriasFoodtruck);
             rating = itemView.findViewById(R.id.txtRatingFoodtruck);
             distancia = itemView.findViewById(R.id.txtDistanciaFoodtruck);
             estado = itemView.findViewById(R.id.txtEstadoFoodtruck);
+            btnCompartir = itemView.findViewById(R.id.btnCompartirFoodtruck);
 
             prepararPresion(itemView);
         }

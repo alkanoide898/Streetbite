@@ -18,15 +18,20 @@ respaldo.
   por categoría y switch de “solo abiertos”.
 - **Categorías dinámicas**: los chips se generan desde las categorías presentes
   en el catálogo; si mañana se agrega “sushi”, el chip aparece solo.
-- **Mejor calificados**: fila horizontal con los locales mejor puntuados.
-- **Mapa interactivo**: zoom inicial cercano en San Carlos para distinguir
-  locales vecinos, tarjeta inferior flotante con acceso al detalle y distancias
-  siempre referenciadas dentro de la comuna (con respaldo al centro de San
-  Carlos si el GPS está fuera de la zona).
-- **Favoritos personales (CRUD)**: cada usuario puede guardar sus foodtrucks
-  preferidos con etiqueta (`Favorito`, `Bajón nocturno`, `Con amigos`,
-  `Por probar`) y nota privada desde el detalle o desde **Perfil → Mis
-  favoritos**, filtrar por etiqueta, editar y eliminar con RLS en Supabase.
+- **Cercanos y mejor calificados**: lista principal ordenada por cercanía
+  real en San Carlos (limitada a los 4 más cercanos) con filtro consistente por
+  categoría, y fila inferior con los **Mejor calificados**.
+- **Mapa interactivo y Cómo llegar**: zoom inicial cercano en San Carlos para
+  distinguir locales vecinos, tarjeta inferior flotante con acceso al detalle,
+  botón directo **Cómo llegar** (Google Maps / Waze) y distancias siempre
+  referenciadas dentro de la comuna (con respaldo al centro de San Carlos si el
+  GPS está fuera de la zona).
+- **Favoritos personales y compartidos (CRUD)**: acceso directo desde la barra
+  inferior (`Inicio · Mapa · Favoritos`). Cada usuario puede guardar locales con
+  sección (`Para almorzar`, `Bajón nocturno`, `Con amigos`, `Por probar`) y nota
+  privada, o compartir un foodtruck con otro usuario registrado en Supabase
+  eligiendo la sección destino para que aparezca destacado como **En conjunto
+  con …** en las sesiones de ambos.
 - **Recomendación por acelerómetro**: al agitar el dispositivo en Home (o tocar
   la barra de sugerencia), la app elige un local abierto al azar y lo muestra
   en una tarjeta visual; se puede activar o desactivar en **Configuración**.
@@ -34,8 +39,8 @@ respaldo.
   del detalle, con las fotos de sus platos en la sección **Menú**.
 - **Visor de fotos**: al tocar una foto del menú se abre a pantalla completa con
   pellizco para acercar, arrastre y doble toque.
-- **Detalle del local**: estado, distancia, dirección, horario y accesos
-  directos a WhatsApp e Instagram.
+- **Detalle del local**: estado, distancia, dirección, horario, botón **Cómo
+  llegar** y accesos directos a WhatsApp e Instagram.
 - **Cuentas y seguridad**: registro e inicio de sesión con correo/contraseña y
   con Discord, recuperación de contraseña con retorno directo a la app
   (`streetbite://login-callback`) y cambio de contraseña desde **Mi información**.
@@ -43,8 +48,9 @@ respaldo.
   directo a Home.
 - **Perfil**: edición de nombre y correo, cambio de contraseña, favoritos,
   configuración de sonidos y acelerómetro, eliminación de cuenta y logout.
-- **Identidad visual, sonidos y animaciones**: tema *Nocturno Urbano* cálido con
-  degradados e íconos vectoriales propios (sin emojis), efectos de sonido
+- **Identidad visual, sonidos y animaciones**: paleta oscura **Negro + blanco +
+  naranja** (carbón `#181818` / `#242424`, blanco `#FAFAF8` / `#E8E5DF` y
+  naranja `#F47B35`), íconos vectoriales propios (sin emojis), efectos de sonido
   limpios y animaciones sincronizadas a 60 fps.
 - **Respaldo local**: si Supabase falla, la app sigue mostrando el catálogo.
 
@@ -84,6 +90,7 @@ app/src/main/java/com/chacho/streetbite/
 ├── FoodtruckAdapter.java        # tarjetas, logos, DiffUtil y presión táctil
 ├── FavoritoAdapter.java         # tarjetas de favoritos con notas y acciones
 ├── DialogoFavorito.java         # diálogo reutilizable crear/editar favorito
+├── DialogoCompartirFavorito.java # diálogo para compartir local y elegir sección
 ├── DetectorAgitacion.java       # sensor acelerómetro (agitar para sugerir)
 ├── ZoomImageView.java           # zoom y arrastre en el visor
 ├── Imagenes.java                # carga de imágenes con caché y downsampling
@@ -252,12 +259,14 @@ personal privada.
 | `id` | `uuid` | Clave primaria. |
 | `usuario_id` | `uuid` | Dueño del favorito (FK a `auth.users`, `ON DELETE CASCADE`). |
 | `foodtruck_id` | `uuid` | Local guardado (FK a `public.foodtrucks`, `ON DELETE CASCADE`). |
-| `etiqueta` | `text` | Categoría personal (`Favorito`, `Bajón nocturno`, `Con amigos`, `Por probar`). |
-| `nota` | `text` | Nota personal privada del usuario. |
+| `etiqueta` | `text` | Sección personal (`Para almorzar`, `Bajón nocturno`, `Con amigos`, `Por probar`). |
+| `nota` | `text` | Nota personal del usuario. |
+| `dueno_nombre` | `text` | Nombre visible del creador cuando se comparte. |
+| `compartido_con_id` | `uuid` | Usuario registrado con quien se comparte (FK a `auth.users`, opcional). |
+| `compartido_con_nombre` / `compartido_con_correo` | `text` | Datos visibles del compañero para mostrar **En conjunto con …**. |
 | `created_at` / `updated_at` | `timestamptz` | Fechas automáticas. |
 
-**RLS activo** para `authenticated` con `auth.uid() = usuario_id` en `SELECT`,
-`INSERT`, `UPDATE` y `DELETE`, e índice único en `(usuario_id, foodtruck_id)`.
+**RLS activo** para `authenticated` permitiendo acceso al creador (`auth.uid() = usuario_id`) y al usuario con quien fue compartido (`auth.uid() = compartido_con_id`), índice único en `(usuario_id, foodtruck_id)` y función RPC `public.compartir_favorito(...)`.
 
 ### Endpoints usados
 
@@ -571,6 +580,27 @@ perfiles de otros usuarios.
 ---
 
 ## Historial de cambios
+
+### 2026-11-22 — Favoritos compartidos, rutas, orden por cercanía y paleta carbón/naranja
+
+- **Favoritos colaborativos entre usuarios registrados**: nuevas columnas de
+  compartido, políticas RLS para creador/compañero y RPC `compartir_favorito(...)`
+  en `supabase/favoritos.sql`. Cada favorito compartido aparece en las sesiones
+  de ambos usuarios con tarjeta destacada y banner **En conjunto con …**.
+- **Compartir desde Home con selector de sección**: nuevo
+  `DialogoCompartirFavorito` accesible desde las tarjetas de foodtrucks,
+  permitiendo elegir la sección destino (`Para almorzar`, `Bajón nocturno`,
+  `Con amigos`, `Por probar`). Se reemplazó la etiqueta `"Favorito"` por
+  `"Para almorzar"`.
+- **Navegación y rutas directas**: pestaña **Favoritos** en la barra inferior
+  (`Inicio · Mapa · Favoritos`) y botón **Cómo llegar** (`geo:lat,lon` hacia
+  Google Maps / Waze) en `DetalleFoodtruckActivity` y `MapActivity`.
+- **Home más claro y consistente**: orden por cercanía limitado a los 4 locales
+  más cercanos, filtrado consistente por categoría sin duplicaciones ni saltos y
+  sección **Mejor calificados** en la parte inferior.
+- **Paleta Negro + blanco + naranja**: actualización completa de `colors.xml`,
+  `themes.xml`, drawables, splash e íconos a carbón `#181818` / `#242424`,
+  blanco `#FAFAF8` / `#E8E5DF` y naranja `#F47B35`.
 
 ### 2026-11-22 — CRUD de favoritos, tema Nocturno Urbano, acelerómetro y mejoras de UX
 

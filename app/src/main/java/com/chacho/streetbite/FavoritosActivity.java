@@ -2,8 +2,11 @@ package com.chacho.streetbite;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.InputType;
+import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -74,6 +77,11 @@ public class FavoritosActivity extends BaseActivity {
                     FavoritoAdapter.ItemFavorito item,
                     ImageView imgLogo) {
                 abrirDetalle(item.foodtruck, imgLogo);
+            }
+
+            @Override
+            public void onCompartir(FavoritoAdapter.ItemFavorito item) {
+                abrirDialogoCompartir(item);
             }
 
             @Override
@@ -217,6 +225,7 @@ public class FavoritosActivity extends BaseActivity {
                 foodtruckId,
                 etiqueta,
                 nota,
+                Sesion.nombre(this),
                 new SupabaseHelper.FavoritoCallback() {
                     @Override
                     public void onSuccess(Favorito creado) {
@@ -262,6 +271,188 @@ public class FavoritosActivity extends BaseActivity {
                 (foodtruckId, etiqueta, nota) ->
                         actualizarFavoritoEnNube(item.favorito.id, etiqueta, nota),
                 () -> confirmarEliminarFavorito(item)
+        );
+    }
+
+    private void abrirDialogoCompartir(FavoritoAdapter.ItemFavorito item) {
+        Favorito fav = item.favorito;
+        String nombreLocal = item.foodtruck != null
+                ? item.foodtruck.nombre
+                : "este foodtruck";
+
+        float densidad = getResources().getDisplayMetrics().density;
+        int padH = Math.round(22 * densidad);
+        int padV = Math.round(12 * densidad);
+        int padCampo = Math.round(14 * densidad);
+
+        LinearLayout contenedor = new LinearLayout(this);
+        contenedor.setOrientation(LinearLayout.VERTICAL);
+        contenedor.setPadding(padH, padV, padH, padV / 2);
+
+        TextView txtEstadoActual = new TextView(this);
+        txtEstadoActual.setTextColor(getColor(R.color.sb_texto_suave));
+        txtEstadoActual.setTextSize(13f);
+        if (fav.estaCompartido()) {
+            String companero = fav.nombreCompanero(Sesion.usuarioId(this));
+            txtEstadoActual.setText(
+                    "Actualmente compartido en conjunto con " + companero
+                            + ". Puedes cambiar el correo o dejar de compartir."
+            );
+        } else {
+            txtEstadoActual.setText(
+                    "Ingresa el correo de un usuario registrado en StreetBite para compartir \""
+                            + nombreLocal + "\"."
+            );
+        }
+        contenedor.addView(txtEstadoActual);
+
+        EditText edtCorreo = new EditText(this);
+        edtCorreo.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        edtCorreo.setSingleLine(true);
+        edtCorreo.setHint("amigo@ejemplo.cl");
+        edtCorreo.setBackgroundResource(R.drawable.bg_sb_input);
+        edtCorreo.setTextColor(getColor(R.color.sb_marron));
+        edtCorreo.setHintTextColor(getColor(R.color.sb_hint));
+        edtCorreo.setPadding(padCampo, padCampo, padCampo, padCampo);
+        if (!fav.compartidoConCorreo.isEmpty()) {
+            edtCorreo.setText(fav.compartidoConCorreo);
+        }
+
+        LinearLayout.LayoutParams paramsCampo = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        paramsCampo.topMargin = Math.round(12 * densidad);
+        edtCorreo.setLayoutParams(paramsCampo);
+        contenedor.addView(edtCorreo);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle("Compartir favorito")
+                .setView(contenedor)
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Compartir", null);
+
+        if (fav.estaCompartido()) {
+            builder.setNeutralButton(
+                    "Dejar de compartir",
+                    (d, w) -> dejarDeCompartirEnNube(fav.id)
+            );
+        }
+
+        AlertDialog dialogo = builder.create();
+        dialogo.setOnShowListener(d -> {
+            Button btnCompartir = dialogo.getButton(AlertDialog.BUTTON_POSITIVE);
+            btnCompartir.setOnClickListener(v -> {
+                String correo = edtCorreo.getText().toString().trim();
+                if (!Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
+                    Toast.makeText(
+                            this,
+                            "Ingresa un correo electrónico válido.",
+                            Toast.LENGTH_SHORT
+                    ).show();
+                    return;
+                }
+
+                btnCompartir.setEnabled(false);
+                btnCompartir.setText("Compartiendo...");
+                compartirFavoritoEnNube(fav.id, correo, dialogo, btnCompartir);
+            });
+        });
+
+        dialogo.show();
+        sonarBotonesDelDialogo(dialogo);
+    }
+
+    private void compartirFavoritoEnNube(
+            String favoritoId,
+            String correoDestino,
+            AlertDialog dialogo,
+            Button btnCompartir) {
+
+        String accessToken = Sesion.accessToken(this);
+        if (accessToken.isEmpty()) {
+            return;
+        }
+
+        SupabaseHelper.compartirFavorito(
+                accessToken,
+                favoritoId,
+                correoDestino,
+                new SupabaseHelper.FavoritoCallback() {
+                    @Override
+                    public void onSuccess(Favorito actualizado) {
+                        runOnUiThread(() -> {
+                            dialogo.dismiss();
+                            if (actualizado != null) {
+                                reemplazarFavorito(actualizado);
+                                refrescarVista();
+                                String companero = actualizado.nombreCompanero(
+                                        Sesion.usuarioId(FavoritosActivity.this)
+                                );
+                                Toast.makeText(
+                                        FavoritosActivity.this,
+                                        "Compartido en conjunto con " + companero + ".",
+                                        Toast.LENGTH_LONG
+                                ).show();
+                            } else {
+                                cargarCatalogoYFavoritos();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        runOnUiThread(() -> {
+                            btnCompartir.setEnabled(true);
+                            btnCompartir.setText("Compartir");
+                            Toast.makeText(
+                                    FavoritosActivity.this,
+                                    mensaje,
+                                    Toast.LENGTH_LONG
+                            ).show();
+                        });
+                    }
+                }
+        );
+    }
+
+    private void dejarDeCompartirEnNube(String favoritoId) {
+        String accessToken = Sesion.accessToken(this);
+        if (accessToken.isEmpty()) {
+            return;
+        }
+
+        SupabaseHelper.dejarDeCompartirFavorito(
+                accessToken,
+                favoritoId,
+                new SupabaseHelper.FavoritoCallback() {
+                    @Override
+                    public void onSuccess(Favorito actualizado) {
+                        runOnUiThread(() -> {
+                            if (actualizado != null) {
+                                reemplazarFavorito(actualizado);
+                                refrescarVista();
+                            } else {
+                                cargarCatalogoYFavoritos();
+                            }
+                            Toast.makeText(
+                                    FavoritosActivity.this,
+                                    "Se dejó de compartir este favorito.",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        runOnUiThread(() -> Toast.makeText(
+                                FavoritosActivity.this,
+                                "No se pudo actualizar: " + mensaje,
+                                Toast.LENGTH_LONG
+                        ).show());
+                    }
+                }
         );
     }
 

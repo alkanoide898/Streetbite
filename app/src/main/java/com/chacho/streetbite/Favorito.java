@@ -3,13 +3,14 @@ package com.chacho.streetbite;
 import org.json.JSONObject;
 
 /**
- * Modelo de un foodtruck guardado como favorito por el usuario autenticado.
+ * Modelo de un foodtruck guardado como favorito por el usuario autenticado
+ * (o compartido con él por otro usuario registrado).
  * Corresponde a una fila de public.favoritos en Supabase.
  */
 public class Favorito {
 
     public static final String[] ETIQUETAS = {
-            "Favorito",
+            "Para almorzar",
             "Bajón nocturno",
             "Con amigos",
             "Por probar"
@@ -20,6 +21,10 @@ public class Favorito {
     public final String foodtruckId;
     public final String etiqueta;
     public final String nota;
+    public final String duenoNombre;
+    public final String compartidoConId;
+    public final String compartidoConNombre;
+    public final String compartidoConCorreo;
     public final String createdAt;
     public final String updatedAt;
 
@@ -28,17 +33,52 @@ public class Favorito {
                     String foodtruckId,
                     String etiqueta,
                     String nota,
+                    String duenoNombre,
+                    String compartidoConId,
+                    String compartidoConNombre,
+                    String compartidoConCorreo,
                     String createdAt,
                     String updatedAt) {
         this.id = id == null ? "" : id;
         this.usuarioId = usuarioId == null ? "" : usuarioId;
         this.foodtruckId = foodtruckId == null ? "" : foodtruckId;
         this.etiqueta = etiqueta == null || etiqueta.trim().isEmpty()
-                ? "Favorito"
+                ? "Para almorzar"
                 : etiqueta.trim();
         this.nota = nota == null ? "" : nota.trim();
+        this.duenoNombre = duenoNombre == null ? "" : duenoNombre.trim();
+        this.compartidoConId = compartidoConId == null ? "" : compartidoConId.trim();
+        this.compartidoConNombre = compartidoConNombre == null
+                ? ""
+                : compartidoConNombre.trim();
+        this.compartidoConCorreo = compartidoConCorreo == null
+                ? ""
+                : compartidoConCorreo.trim();
         this.createdAt = createdAt == null ? "" : createdAt;
         this.updatedAt = updatedAt == null ? "" : updatedAt;
+    }
+
+    public boolean estaCompartido() {
+        return !compartidoConId.isEmpty();
+    }
+
+    /**
+     * Devuelve el nombre del otro usuario con quien está compartido el
+     * favorito, según quién haya iniciado sesión en este dispositivo.
+     */
+    public String nombreCompanero(String miUsuarioId) {
+        if (!estaCompartido()) {
+            return "";
+        }
+
+        if (usuarioId.equals(miUsuarioId)) {
+            if (!compartidoConNombre.isEmpty()) {
+                return compartidoConNombre;
+            }
+            return compartidoConCorreo.isEmpty() ? "un amigo" : compartidoConCorreo;
+        }
+
+        return duenoNombre.isEmpty() ? "un amigo" : duenoNombre;
     }
 
     public static Favorito desdeJson(JSONObject fila) {
@@ -59,6 +99,10 @@ public class Favorito {
                 foodtruckId,
                 texto(fila, "etiqueta"),
                 texto(fila, "nota"),
+                texto(fila, "dueno_nombre"),
+                texto(fila, "compartido_con_id"),
+                texto(fila, "compartido_con_nombre"),
+                texto(fila, "compartido_con_correo"),
                 texto(fila, "created_at"),
                 texto(fila, "updated_at")
         );

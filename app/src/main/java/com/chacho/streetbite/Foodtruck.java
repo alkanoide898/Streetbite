@@ -3,6 +3,8 @@ package com.chacho.streetbite;
 import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
+import android.net.Uri;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -249,6 +251,54 @@ public class Foodtruck {
         return resultado[0] <= RADIO_SAN_CARLOS_METROS ? gps : sanCarlos;
     }
 
+    /** Distancia en metros desde el usuario (o centro de San Carlos). */
+    public float distanciaMetros(Location usuario) {
+        Location origen = ubicacionEnSanCarlos(usuario);
+        float[] resultado = new float[1];
+        Location.distanceBetween(
+                origen.getLatitude(), origen.getLongitude(),
+                lat, lon,
+                resultado
+        );
+        return resultado[0];
+    }
+
+    /** Abre la app de mapas (Google Maps / Waze) con ruta hasta el local. */
+    public static void abrirComoLlegar(
+            Context contexto,
+            double lat,
+            double lon,
+            String nombre) {
+
+        String etiqueta = (nombre == null || nombre.trim().isEmpty())
+                ? "Foodtruck"
+                : nombre.trim();
+
+        Uri geoUri = Uri.parse(
+                "geo:" + lat + "," + lon
+                        + "?q=" + lat + "," + lon
+                        + "(" + Uri.encode(etiqueta) + ")"
+        );
+
+        try {
+            contexto.startActivity(new Intent(Intent.ACTION_VIEW, geoUri));
+        } catch (Exception e) {
+            try {
+                Uri webUri = Uri.parse(
+                        "https://www.google.com/maps/dir/?api=1&destination="
+                                + lat + "," + lon
+                );
+                contexto.startActivity(new Intent(Intent.ACTION_VIEW, webUri));
+            } catch (Exception ex) {
+                Toast.makeText(
+                        contexto,
+                        "No se pudo abrir la navegación.",
+                        Toast.LENGTH_SHORT
+                ).show();
+            }
+        }
+    }
+
     /** Distancia real entre el usuario y el foodtruck. Si no hay ubicación, muestra "--". */
     public String distanciaTexto(Location usuario) {
         if (usuario == null) {
@@ -328,6 +378,8 @@ public class Foodtruck {
         intent.putExtra("horario", horario);
         intent.putExtra("telefono", telefono);
         intent.putExtra("instagram", instagram);
+        intent.putExtra("lat", lat);
+        intent.putExtra("lon", lon);
 
         return intent;
     }

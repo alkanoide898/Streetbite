@@ -33,6 +33,8 @@ public class FavoritoAdapter
     public interface AccionesListener {
         void onAbrirDetalle(ItemFavorito item, ImageView imgLogo);
 
+        void onCompartir(ItemFavorito item);
+
         void onEditar(ItemFavorito item);
 
         void onEliminar(ItemFavorito item);
@@ -108,6 +110,22 @@ public class FavoritoAdapter
 
         holder.txtEtiqueta.setText(fav.etiqueta);
 
+        String miUsuarioId = Sesion.usuarioId(holder.itemView.getContext());
+        if (fav.estaCompartido()) {
+            holder.contenedorTarjeta.setBackgroundResource(
+                    R.drawable.bg_tarjeta_compartida
+            );
+            holder.txtCompartido.setText(
+                    "En conjunto con " + fav.nombreCompanero(miUsuarioId)
+            );
+            holder.txtCompartido.setVisibility(View.VISIBLE);
+        } else {
+            holder.contenedorTarjeta.setBackgroundResource(
+                    R.drawable.bg_tarjeta_borde
+            );
+            holder.txtCompartido.setVisibility(View.GONE);
+        }
+
         if (fav.nota.isEmpty()) {
             holder.txtNota.setVisibility(View.GONE);
         } else {
@@ -118,6 +136,12 @@ public class FavoritoAdapter
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onAbrirDetalle(item, holder.imgLogo);
+            }
+        });
+
+        holder.btnCompartir.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onCompartir(item);
             }
         });
 
@@ -157,23 +181,29 @@ public class FavoritoAdapter
 
     static class FavoritoViewHolder extends RecyclerView.ViewHolder {
 
+        final View contenedorTarjeta;
         final ImageView imgLogo;
         final TextView txtNombre;
         final TextView txtRating;
         final TextView txtEstado;
         final TextView txtEtiqueta;
+        final TextView txtCompartido;
         final TextView txtNota;
+        final TextView btnCompartir;
         final TextView btnEditar;
         final TextView btnQuitar;
 
         FavoritoViewHolder(@NonNull View itemView) {
             super(itemView);
+            contenedorTarjeta = itemView.findViewById(R.id.contenedorTarjetaFavorito);
             imgLogo = itemView.findViewById(R.id.imgFavoritoLogo);
             txtNombre = itemView.findViewById(R.id.txtFavoritoNombre);
             txtRating = itemView.findViewById(R.id.txtFavoritoRating);
             txtEstado = itemView.findViewById(R.id.txtFavoritoEstado);
             txtEtiqueta = itemView.findViewById(R.id.txtFavoritoEtiqueta);
+            txtCompartido = itemView.findViewById(R.id.txtFavoritoCompartido);
             txtNota = itemView.findViewById(R.id.txtFavoritoNota);
+            btnCompartir = itemView.findViewById(R.id.btnCompartirFavorito);
             btnEditar = itemView.findViewById(R.id.btnEditarFavorito);
             btnQuitar = itemView.findViewById(R.id.btnQuitarFavorito);
         }

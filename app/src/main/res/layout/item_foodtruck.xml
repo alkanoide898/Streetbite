@@ -40,16 +40,37 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/txtNombreFoodtruck"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="@color/sb_marron"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                tools:text="Las Mechadas de Mechita" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/txtNombreFoodtruck"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/sb_marron"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    tools:text="Las Mechadas de Mechita" />
+
+                <ImageView
+                    android:id="@+id/btnCompartirFoodtruck"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_circulo_icono"
+                    android:clickable="true"
+                    android:contentDescription="Compartir foodtruck con un amigo"
+                    android:focusable="true"
+                    android:padding="7dp"
+                    android:src="@drawable/ic_group"
+                    app:tint="@color/sb_naranja" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/txtDescripcionFoodtruck"
@@ -61,6 +82,18 @@
                 android:textColor="@color/sb_texto_suave"
                 android:textSize="13sp"
                 tools:text="Hamburguesas caseras de calidad." />
+
+            <TextView
+                android:id="@+id/txtCategoriasFoodtruck"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/sb_naranja"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                tools:text="Hamburguesas · Completos · Churrascos" />
 
             <LinearLayout
                 android:layout_width="match_parent"

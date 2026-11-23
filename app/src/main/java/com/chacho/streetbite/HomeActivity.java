@@ -30,7 +30,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
 import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -46,11 +45,13 @@ public class HomeActivity extends BaseActivity {
 
     private static final int PERMISOS_UBICACION = 2001;
 
+    private static final int MAX_CERCANOS = 4;
     private static final int MAX_DESTACADOS = 3;
 
     // Catálogo completo tal como llega del repositorio.
     private final List<Foodtruck> todos = new ArrayList<>();
 
+    private RecyclerView recyclerCercanos;
     private FoodtruckAdapter adaptadorCercanos;
     private FoodtruckAdapter adaptadorDestacados;
 
@@ -120,6 +121,12 @@ public class HomeActivity extends BaseActivity {
             startActivity(new Intent(this, MapActivity.class));
         });
 
+        View btnFavoritosNav = findViewById(R.id.btnIrFavoritos);
+        btnFavoritosNav.setOnClickListener(v -> {
+            animarBotonNav(v);
+            startActivity(new Intent(this, FavoritosActivity.class));
+        });
+
         findViewById(R.id.btnHome).setOnClickListener(v -> {
             // Ya estamos en Home: solo el rebote del icono.
             animarBotonNav(v);
@@ -166,7 +173,7 @@ public class HomeActivity extends BaseActivity {
     /** Si una animación quedó a medias al navegar, deja los botones normales. */
     private void reiniciarBotonesNav() {
 
-        int[] ids = {R.id.btnHome, R.id.btnIrMapa, R.id.btnPerfil};
+        int[] ids = {R.id.btnHome, R.id.btnIrMapa, R.id.btnIrFavoritos, R.id.btnPerfil};
 
         for (int id : ids) {
             View vista = findViewById(id);
@@ -186,11 +193,15 @@ public class HomeActivity extends BaseActivity {
 
         txtSinResultados = findViewById(R.id.txtSinResultados);
 
-        RecyclerView recyclerCercanos = findViewById(R.id.recyclerCercanos);
+        recyclerCercanos = findViewById(R.id.recyclerCercanos);
         recyclerCercanos.setLayoutManager(new LinearLayoutManager(this));
+        recyclerCercanos.setItemAnimator(null);
         adaptadorCercanos = new FoodtruckAdapter(
                 R.layout.item_foodtruck,
                 this::abrirDetalle
+        );
+        adaptadorCercanos.setOnCompartirClick(foodtruck ->
+                DialogoCompartirFavorito.mostrarParaFoodtruck(this, foodtruck)
         );
         recyclerCercanos.setAdapter(adaptadorCercanos);
 
@@ -202,43 +213,12 @@ public class HomeActivity extends BaseActivity {
                         false
                 )
         );
+        recyclerDestacados.setItemAnimator(null);
         adaptadorDestacados = new FoodtruckAdapter(
                 R.layout.item_foodtruck_destacado,
                 this::abrirDetalle
         );
         recyclerDestacados.setAdapter(adaptadorDestacados);
-    }
-
-    /**
-     * El animador de filtros se activa recién después de la primera carga:
-     * así la entrada escalonada no pelea con la animación de "alta" de
-     * RecyclerView y conserva su retraso por tarjeta.
-     */
-    private void activarAnimadoresListas() {
-
-        RecyclerView cercanos = findViewById(R.id.recyclerCercanos);
-        RecyclerView destacados = findViewById(R.id.recyclerDestacados);
-
-        if (cercanos != null && cercanos.getItemAnimator() == null) {
-            configurarAnimadorLista(cercanos);
-        }
-
-        if (destacados != null && destacados.getItemAnimator() == null) {
-            configurarAnimadorLista(destacados);
-        }
-    }
-
-    /** Animaciones cortas al agregar, quitar o mover tarjetas por un filtro. */
-    private void configurarAnimadorLista(RecyclerView recycler) {
-
-        DefaultItemAnimator animador = new DefaultItemAnimator();
-        animador.setAddDuration(180);
-        animador.setRemoveDuration(140);
-        animador.setMoveDuration(180);
-        animador.setChangeDuration(140);
-        animador.setSupportsChangeAnimations(false);
-
-        recycler.setItemAnimator(animador);
     }
 
     private void cargarFoodtrucks() {
@@ -268,7 +248,6 @@ public class HomeActivity extends BaseActivity {
                     }
 
                     aplicarFiltros();
-                    activarAnimadoresListas();
                 })
         );
     }
@@ -639,11 +618,19 @@ public class HomeActivity extends BaseActivity {
             }
         }
 
+        Collections.sort(filtrados, (a, b) -> {
+            int cmp = Float.compare(
+                    a.distanciaMetros(ubicacionUsuario),
+                    b.distanciaMetros(ubicacionUsuario)
+            );
+            return cmp != 0 ? cmp : a.nombre.compareToIgnoreCase(b.nombre);
+        });
+
         List<Foodtruck> destacados = new ArrayList<>(filtrados);
-        Collections.sort(
-                destacados,
-                (a, b) -> Double.compare(b.rating, a.rating)
-        );
+        Collections.sort(destacados, (a, b) -> {
+            int cmp = Double.compare(b.rating, a.rating);
+            return cmp != 0 ? cmp : a.nombre.compareToIgnoreCase(b.nombre);
+        });
 
         if (destacados.size() > MAX_DESTACADOS) {
             destacados = new ArrayList<>(
@@ -651,8 +638,15 @@ public class HomeActivity extends BaseActivity {
             );
         }
 
-        adaptadorCercanos.actualizar(filtrados, ubicacionUsuario);
+        List<Foodtruck> cercanos = filtrados.size() > MAX_CERCANOS
+                ? new ArrayList<>(filtrados.subList(0, MAX_CERCANOS))
+                : filtrados;
+
+        adaptadorCercanos.actualizar(cercanos, ubicacionUsuario);
         adaptadorDestacados.actualizar(destacados, ubicacionUsuario);
+        if (recyclerCercanos != null) {
+            recyclerCercanos.requestLayout();
+        }
 
         if (txtSinResultados != null) {
 

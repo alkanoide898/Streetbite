@@ -60,7 +60,7 @@
             android:fontFamily="sans-serif-black"
             android:letterSpacing="-0.02"
             android:text="StreetBite"
-            android:textColor="#FFF8F0"
+            android:textColor="#FAFAF8"
             android:textSize="38sp" />
 
         <TextView
@@ -72,7 +72,7 @@
             android:gravity="center"
             android:letterSpacing="0.03"
             android:text="Encuentra tu próximo foodtruck"
-            android:textColor="#D7CCC8"
+            android:textColor="#E8E5DF"
             android:textSize="14sp" />
     </LinearLayout>
 

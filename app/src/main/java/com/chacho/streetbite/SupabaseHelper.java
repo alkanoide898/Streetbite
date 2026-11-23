@@ -34,7 +34,9 @@ public final class SupabaseHelper {
     private static final String TABLA_USUARIOS = "/rest/v1/usuarios";
     private static final String TABLA_FAVORITOS = "/rest/v1/favoritos";
     private static final String CAMPOS_FAVORITO =
-            "id,usuario_id,foodtruck_id,etiqueta,nota,created_at,updated_at";
+            "id,usuario_id,foodtruck_id,etiqueta,nota,dueno_nombre,"
+                    + "compartido_con_id,compartido_con_nombre,"
+                    + "compartido_con_correo,created_at,updated_at";
 
     // Columnas del catálogo. Las fotos reales se agregaron después, así que
     // existe una versión sin ellas para bases que todavía no se migraron.
@@ -686,7 +688,7 @@ public final class SupabaseHelper {
 
         String url = SupabaseConfig.SUPABASE_URL
                 + TABLA_FAVORITOS
-                + "?usuario_id=eq." + usuarioId
+                + "?or=(usuario_id.eq." + usuarioId + ",compartido_con_id.eq." + usuarioId + ")"
                 + "&select=" + CAMPOS_FAVORITO
                 + "&order=updated_at.desc";
 
@@ -772,7 +774,7 @@ public final class SupabaseHelper {
 
         String url = SupabaseConfig.SUPABASE_URL
                 + TABLA_FAVORITOS
-                + "?usuario_id=eq." + usuarioId
+                + "?or=(usuario_id.eq." + usuarioId + ",compartido_con_id.eq." + usuarioId + ")"
                 + "&foodtruck_id=eq." + foodtruckId
                 + "&select=" + CAMPOS_FAVORITO
                 + "&limit=1";
@@ -812,6 +814,20 @@ public final class SupabaseHelper {
             String etiqueta,
             String nota,
             FavoritoCallback callback) {
+        crearFavorito(accessToken, usuarioId, foodtruckId, etiqueta, nota, "", callback);
+    }
+
+    /**
+     * Crea un nuevo favorito en public.favoritos con etiqueta, nota y nombre del dueño.
+     */
+    public static void crearFavorito(
+            String accessToken,
+            String usuarioId,
+            String foodtruckId,
+            String etiqueta,
+            String nota,
+            String duenoNombre,
+            FavoritoCallback callback) {
 
         try {
             JSONObject datos = new JSONObject();
@@ -820,10 +836,11 @@ public final class SupabaseHelper {
             datos.put(
                     "etiqueta",
                     etiqueta == null || etiqueta.trim().isEmpty()
-                            ? "Favorito"
+                            ? "Para almorzar"
                             : etiqueta.trim()
             );
             datos.put("nota", nota == null ? "" : nota.trim());
+            datos.put("dueno_nombre", duenoNombre == null ? "" : duenoNombre.trim());
 
             Request solicitud = new Request.Builder()
                     .url(SupabaseConfig.SUPABASE_URL + TABLA_FAVORITOS)
@@ -872,7 +889,7 @@ public final class SupabaseHelper {
             datos.put(
                     "etiqueta",
                     etiqueta == null || etiqueta.trim().isEmpty()
-                            ? "Favorito"
+                            ? "Para almorzar"
                             : etiqueta.trim()
             );
             datos.put("nota", nota == null ? "" : nota.trim());
@@ -929,6 +946,105 @@ public final class SupabaseHelper {
                 .build();
 
         ejecutar(solicitud, callback);
+    }
+
+    /**
+     * Comparte un favorito con otro usuario registrado por su correo mediante RPC.
+     */
+    public static void compartirFavorito(
+            String accessToken,
+            String favoritoId,
+            String correoDestino,
+            FavoritoCallback callback) {
+
+        try {
+            JSONObject datos = new JSONObject();
+            datos.put("p_favorito_id", favoritoId);
+            datos.put(
+                    "p_correo_destino",
+                    correoDestino == null
+                            ? ""
+                            : correoDestino.trim().toLowerCase(Locale.ROOT)
+            );
+
+            Request solicitud = new Request.Builder()
+                    .url(SupabaseConfig.SUPABASE_URL
+                            + "/rest/v1/rpc/compartir_favorito")
+                    .post(RequestBody.create(datos.toString(), JSON))
+                    .addHeader("apikey",
+                            SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .addHeader("Content-Type", "application/json")
+                    .build();
+
+            ejecutar(solicitud, new AuthCallback() {
+                @Override
+                public void onSuccess(JSONObject respuesta) {
+                    callback.onSuccess(Favorito.desdeJson(respuesta));
+                }
+
+                @Override
+                public void onError(String mensaje) {
+                    callback.onError(mensaje);
+                }
+
+                @Override
+                public void onSinConexion(String mensaje) {
+                    callback.onSinConexion(mensaje);
+                }
+            });
+
+        } catch (Exception e) {
+            callback.onError("No se pudo preparar la invitación.");
+        }
+    }
+
+    /**
+     * Quita al usuario compartido de un favorito (vuelve a ser solo personal).
+     */
+    public static void dejarDeCompartirFavorito(
+            String accessToken,
+            String favoritoId,
+            FavoritoCallback callback) {
+
+        try {
+            JSONObject datos = new JSONObject();
+            datos.put("compartido_con_id", JSONObject.NULL);
+            datos.put("compartido_con_nombre", "");
+            datos.put("compartido_con_correo", "");
+
+            Request solicitud = new Request.Builder()
+                    .url(SupabaseConfig.SUPABASE_URL
+                            + TABLA_FAVORITOS
+                            + "?id=eq." + favoritoId)
+                    .patch(RequestBody.create(datos.toString(), JSON))
+                    .addHeader("apikey",
+                            SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                    .addHeader("Authorization", "Bearer " + accessToken)
+                    .addHeader("Content-Type", "application/json")
+                    .addHeader("Prefer", "return=representation")
+                    .build();
+
+            ejecutar(solicitud, new AuthCallback() {
+                @Override
+                public void onSuccess(JSONObject respuesta) {
+                    callback.onSuccess(Favorito.desdeJson(respuesta));
+                }
+
+                @Override
+                public void onError(String mensaje) {
+                    callback.onError(mensaje);
+                }
+
+                @Override
+                public void onSinConexion(String mensaje) {
+                    callback.onSinConexion(mensaje);
+                }
+            });
+
+        } catch (Exception e) {
+            callback.onError("No se pudo dejar de compartir.");
+        }
     }
 
     // ============================================================
@@ -1063,6 +1179,12 @@ public final class SupabaseHelper {
         if (minusculas.contains("relation \"public.favoritos\" does not exist")
                 || minusculas.contains("could not find the table 'public.favoritos'")) {
             return "Falta crear la tabla favoritos en Supabase (ejecuta supabase/favoritos.sql).";
+        }
+
+        if (minusculas.contains("compartir_favorito")
+                || minusculas.contains("compartido_con_id")
+                || minusculas.contains("dueno_nombre")) {
+            return "Ejecuta supabase/favoritos.sql en Supabase para activar favoritos compartidos.";
         }
 
         if (codigo == 401) {

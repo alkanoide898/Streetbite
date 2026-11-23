@@ -19,7 +19,7 @@
 
     <!-- Splash del sistema: mismo fondo que activity_splash.xml para que no se note el salto -->
     <style name="Theme.StreetBite.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#1C1613</item>
+        <item name="windowSplashScreenBackground">#181818</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_icon</item>
         <item name="postSplashScreenTheme">@style/Theme.StreetBite</item>
     </style>

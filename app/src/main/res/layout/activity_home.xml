@@ -6,7 +6,7 @@
     android:background="@color/sb_crema"
     android:orientation="vertical">
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -138,7 +138,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="Foodtrucks cerca de ti en San Carlos"
-                    android:textColor="@color/sb_texto_suave"
+                    android:textColor="@color/sb_marron_suave"
                     android:textSize="14sp" />
 
                 <!-- BUSCADOR -->
@@ -295,13 +295,13 @@
             </LinearLayout>
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
     <!-- DIVISOR BARRA INFERIOR -->
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="@color/sb_divisor" />
+        android:background="@color/sb_borde" />
 
     <!-- BARRA INFERIOR -->
     <LinearLayout
@@ -374,6 +374,38 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="3dp"
                 android:text="Mapa"
+                android:textColor="@color/sb_texto_suave"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- FAVORITOS -->
+        <LinearLayout
+            android:id="@+id/btnIrFavoritos"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <FrameLayout
+                android:layout_width="54dp"
+                android:layout_height="30dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_heart_filled"
+                    app:tint="@color/sb_texto_suave" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="Favoritos"
                 android:textColor="@color/sb_texto_suave"
                 android:textSize="12sp" />
         </LinearLayout>
