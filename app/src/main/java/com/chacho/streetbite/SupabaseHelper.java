@@ -35,8 +35,8 @@ public final class SupabaseHelper {
     private static final String TABLA_FAVORITOS = "/rest/v1/favoritos";
     private static final String CAMPOS_FAVORITO =
             "id,usuario_id,foodtruck_id,etiqueta,nota,dueno_nombre,"
-                    + "compartido_con_id,compartido_con_nombre,"
-                    + "compartido_con_correo,created_at,updated_at";
+                    + "compartido_con_nombre,compartido_con_correo,"
+                    + "created_at,updated_at";
 
     // Columnas del catálogo. Las fotos reales se agregaron después, así que
     // existe una versión sin ellas para bases que todavía no se migraron.
@@ -678,8 +678,9 @@ public final class SupabaseHelper {
     // ============================================================
 
     /**
-     * Lista los favoritos del usuario autenticado, ordenados por última
-     * actualización. RLS garantiza que solo se devuelven sus propias filas.
+     * Lista los favoritos propios y compartidos del usuario autenticado,
+     * ordenados por última actualización. RLS garantiza que solo se devuelven
+     * filas donde es propietario o invitado.
      */
     public static void listarFavoritos(
             String accessToken,
@@ -688,8 +689,7 @@ public final class SupabaseHelper {
 
         String url = SupabaseConfig.SUPABASE_URL
                 + TABLA_FAVORITOS
-                + "?or=(usuario_id.eq." + usuarioId + ",compartido_con_id.eq." + usuarioId + ")"
-                + "&select=" + CAMPOS_FAVORITO
+                + "?select=" + CAMPOS_FAVORITO
                 + "&order=updated_at.desc";
 
         Request solicitud = new Request.Builder()
@@ -763,8 +763,9 @@ public final class SupabaseHelper {
     }
 
     /**
-     * Busca si el usuario ya guardó un foodtruck concreto en favoritos.
-     * Si no existe, entrega null en onSuccess.
+     * Busca si el usuario tiene un foodtruck concreto en favoritos (priorizando
+     * el favorito propio sobre uno compartido recibido). Si no existe, entrega
+     * null en onSuccess.
      */
     public static void obtenerFavorito(
             String accessToken,
@@ -774,8 +775,99 @@ public final class SupabaseHelper {
 
         String url = SupabaseConfig.SUPABASE_URL
                 + TABLA_FAVORITOS
-                + "?or=(usuario_id.eq." + usuarioId + ",compartido_con_id.eq." + usuarioId + ")"
-                + "&foodtruck_id=eq." + foodtruckId
+                + "?foodtruck_id=eq." + Uri.encode(foodtruckId)
+                + "&select=" + CAMPOS_FAVORITO
+                + "&order=updated_at.desc";
+
+        Request solicitud = new Request.Builder()
+                .url(url)
+                .get()
+                .addHeader("apikey", SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
+                .addHeader("Authorization", "Bearer " + accessToken)
+                .build();
+
+        CLIENT.newCall(solicitud).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e(TAG, "Error al consultar favorito", e);
+                callback.onSinConexion(
+                        "No se pudo conectar con Supabase. "
+                                + "Revisa tu conexión."
+                );
+            }
+
+            @Override
+            public void onResponse(Call call, Response response)
+                    throws IOException {
+
+                try (Response respuesta = response) {
+                    String contenido = respuesta.body() != null
+                            ? respuesta.body().string()
+                            : "";
+
+                    if (!respuesta.isSuccessful()) {
+                        Log.w(
+                                TAG,
+                                "HTTP " + respuesta.code()
+                                        + " URL=" + solicitud.url()
+                                        + " body=" + contenido
+                        );
+                        callback.onError(
+                                mensajeError(
+                                        parsear(contenido),
+                                        respuesta.code()
+                                )
+                        );
+                        return;
+                    }
+
+                    Favorito propio = null;
+                    Favorito compartido = null;
+
+                    try {
+                        JSONArray arreglo = new JSONArray(contenido);
+                        for (int i = 0; i < arreglo.length(); i++) {
+                            Favorito fav = Favorito.desdeJson(
+                                    arreglo.optJSONObject(i)
+                            );
+                            if (fav == null) {
+                                continue;
+                            }
+                            if (fav.esDueno(usuarioId)) {
+                                propio = fav;
+                                break;
+                            }
+                            if (compartido == null) {
+                                compartido = fav;
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.w(TAG, "Respuesta de favorito no válida", e);
+                        callback.onError("No se pudo leer el favorito.");
+                        return;
+                    }
+
+                    callback.onSuccess(propio != null ? propio : compartido);
+                }
+            }
+        });
+    }
+
+    /**
+     * Busca únicamente un favorito cuyo propietario sea el usuario autenticado.
+     * Evita que al compartir un local se modifique por error un favorito
+     * recibido de otro usuario.
+     */
+    public static void obtenerFavoritoPropio(
+            String accessToken,
+            String usuarioId,
+            String foodtruckId,
+            FavoritoCallback callback) {
+
+        String url = SupabaseConfig.SUPABASE_URL
+                + TABLA_FAVORITOS
+                + "?usuario_id=eq." + Uri.encode(usuarioId)
+                + "&foodtruck_id=eq." + Uri.encode(foodtruckId)
                 + "&select=" + CAMPOS_FAVORITO
                 + "&limit=1";
 
@@ -897,7 +989,7 @@ public final class SupabaseHelper {
             Request solicitud = new Request.Builder()
                     .url(SupabaseConfig.SUPABASE_URL
                             + TABLA_FAVORITOS
-                            + "?id=eq." + favoritoId)
+                            + "?id=eq." + Uri.encode(favoritoId))
                     .patch(RequestBody.create(datos.toString(), JSON))
                     .addHeader("apikey",
                             SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
@@ -939,7 +1031,7 @@ public final class SupabaseHelper {
         Request solicitud = new Request.Builder()
                 .url(SupabaseConfig.SUPABASE_URL
                         + TABLA_FAVORITOS
-                        + "?id=eq." + favoritoId)
+                        + "?id=eq." + Uri.encode(favoritoId))
                 .delete()
                 .addHeader("apikey", SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
                 .addHeader("Authorization", "Bearer " + accessToken)
@@ -1000,7 +1092,10 @@ public final class SupabaseHelper {
     }
 
     /**
-     * Quita al usuario compartido de un favorito (vuelve a ser solo personal).
+     * Quita la compartición de un favorito mediante RPC SECURITY DEFINER.
+     * - Si llama el propietario: el favorito vuelve a ser personal y se retorna actualizado.
+     * - Si llama el invitado: deja de recibirlo sin eliminar el favorito original del propietario
+     *   y entrega null en onSuccess (retirado=true).
      */
     public static void dejarDeCompartirFavorito(
             String accessToken,
@@ -1009,20 +1104,16 @@ public final class SupabaseHelper {
 
         try {
             JSONObject datos = new JSONObject();
-            datos.put("compartido_con_id", JSONObject.NULL);
-            datos.put("compartido_con_nombre", "");
-            datos.put("compartido_con_correo", "");
+            datos.put("p_favorito_id", favoritoId);
 
             Request solicitud = new Request.Builder()
                     .url(SupabaseConfig.SUPABASE_URL
-                            + TABLA_FAVORITOS
-                            + "?id=eq." + favoritoId)
-                    .patch(RequestBody.create(datos.toString(), JSON))
+                            + "/rest/v1/rpc/dejar_de_compartir_favorito")
+                    .post(RequestBody.create(datos.toString(), JSON))
                     .addHeader("apikey",
                             SupabaseConfig.SUPABASE_PUBLISHABLE_KEY)
                     .addHeader("Authorization", "Bearer " + accessToken)
                     .addHeader("Content-Type", "application/json")
-                    .addHeader("Prefer", "return=representation")
                     .build();
 
             ejecutar(solicitud, new AuthCallback() {
@@ -1181,10 +1272,18 @@ public final class SupabaseHelper {
             return "Falta crear la tabla favoritos en Supabase (ejecuta supabase/favoritos.sql).";
         }
 
-        if (minusculas.contains("compartir_favorito")
+        if ((minusculas.contains("could not find the function")
+                || minusculas.contains("does not exist"))
+                && (minusculas.contains("compartir_favorito")
+                || minusculas.contains("dejar_de_compartir_favorito")
                 || minusculas.contains("compartido_con_id")
-                || minusculas.contains("dueno_nombre")) {
-            return "Ejecuta supabase/favoritos.sql en Supabase para activar favoritos compartidos.";
+                || minusculas.contains("dueno_nombre"))) {
+            return "Actualiza supabase/favoritos.sql en Supabase para activar favoritos compartidos.";
+        }
+
+        if (minusculas.contains("row-level security")
+                || "42501".equals(resultado.optString("code", ""))) {
+            return "No tienes permiso para realizar esta acción.";
         }
 
         if (codigo == 401) {

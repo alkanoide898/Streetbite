@@ -25,6 +25,7 @@ public class DetalleFoodtruckActivity extends BaseActivity {
     private Favorito favoritoActual;
 
     private TextView btnFavoritoDetalle;
+    private TextView btnEditarFavoritoDetalle;
     private View bloqueFavoritoDetalle;
     private TextView txtEtiquetaFavoritoDetalle;
     private TextView txtCompartidoFavoritoDetalle;
@@ -58,7 +59,7 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         txtEtiquetaFavoritoDetalle = findViewById(R.id.txtEtiquetaFavoritoDetalle);
         txtCompartidoFavoritoDetalle = findViewById(R.id.txtCompartidoFavoritoDetalle);
         txtNotaFavoritoDetalle = findViewById(R.id.txtNotaFavoritoDetalle);
-        TextView btnEditarFavoritoDetalle = findViewById(R.id.btnEditarFavoritoDetalle);
+        btnEditarFavoritoDetalle = findViewById(R.id.btnEditarFavoritoDetalle);
         TextView txtMenuVacio = findViewById(R.id.txtMenuVacio);
         LinearLayout contenedorMenu = findViewById(R.id.contenedorMenu);
 
@@ -237,6 +238,11 @@ public class DetalleFoodtruckActivity extends BaseActivity {
             return;
         }
 
+        if (favoritoActual != null && !favoritoActual.esDueno(usuarioId)) {
+            confirmarDejarDeRecibirFavorito(accessToken);
+            return;
+        }
+
         DialogoFavorito.mostrarParaLocal(
                 this,
                 nombreLocal,
@@ -384,6 +390,72 @@ public class DetalleFoodtruckActivity extends BaseActivity {
         );
     }
 
+    private void confirmarDejarDeRecibirFavorito(String accessToken) {
+        if (favoritoActual == null) {
+            return;
+        }
+
+        String local = nombreLocal == null || nombreLocal.trim().isEmpty()
+                ? "este local"
+                : nombreLocal.trim();
+        String companero = favoritoActual.nombreCompanero(Sesion.usuarioId(this));
+
+        AlertDialog confirmacion = new AlertDialog.Builder(this)
+                .setTitle("Favorito compartido")
+                .setMessage(
+                        "Este favorito fue compartido contigo por " + companero
+                                + ". Solo el propietario puede editarlo. "
+                                + "¿Quieres dejar de recibir a " + local
+                                + " sin eliminar el favorito original?"
+                )
+                .setNegativeButton("Cerrar", null)
+                .setPositiveButton(
+                        "Dejar de recibir",
+                        (d, w) -> dejarDeRecibirFavorito(accessToken, favoritoActual.id)
+                )
+                .create();
+        confirmacion.show();
+        sonarBotonesDelDialogo(confirmacion);
+    }
+
+    private void dejarDeRecibirFavorito(String accessToken, String favoritoId) {
+        SupabaseHelper.dejarDeCompartirFavorito(
+                accessToken,
+                favoritoId,
+                new SupabaseHelper.FavoritoCallback() {
+                    @Override
+                    public void onSuccess(Favorito actualizado) {
+                        runOnUiThread(() -> {
+                            if (isFinishing() || isDestroyed()) {
+                                return;
+                            }
+                            favoritoActual = null;
+                            actualizarVistaFavorito();
+                            Toast.makeText(
+                                    DetalleFoodtruckActivity.this,
+                                    "Dejaste de recibir este favorito.",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+                        });
+                    }
+
+                    @Override
+                    public void onError(String mensaje) {
+                        runOnUiThread(() -> {
+                            if (isFinishing() || isDestroyed()) {
+                                return;
+                            }
+                            Toast.makeText(
+                                    DetalleFoodtruckActivity.this,
+                                    "No se pudo actualizar: " + mensaje,
+                                    Toast.LENGTH_LONG
+                            ).show();
+                        });
+                    }
+                }
+        );
+    }
+
     private void actualizarVistaFavorito() {
         if (favoritoActual == null) {
             btnFavoritoDetalle.setText("Guardar");
@@ -398,8 +470,9 @@ public class DetalleFoodtruckActivity extends BaseActivity {
             return;
         }
 
+        boolean esDueno = favoritoActual.esDueno(Sesion.usuarioId(this));
         int colorGuardado = getColor(R.color.sb_ambar);
-        btnFavoritoDetalle.setText("Guardado");
+        btnFavoritoDetalle.setText(esDueno ? "Guardado" : "Compartido");
         btnFavoritoDetalle.setTextColor(colorGuardado);
         btnFavoritoDetalle.setCompoundDrawablesRelativeWithIntrinsicBounds(
                 R.drawable.ic_heart_filled, 0, 0, 0
@@ -408,8 +481,10 @@ public class DetalleFoodtruckActivity extends BaseActivity {
                 android.content.res.ColorStateList.valueOf(colorGuardado)
         );
         bloqueFavoritoDetalle.setVisibility(View.VISIBLE);
+        btnEditarFavoritoDetalle.setVisibility(esDueno ? View.VISIBLE : View.GONE);
         txtEtiquetaFavoritoDetalle.setText(
-                "En tus favoritos · " + favoritoActual.etiqueta
+                (esDueno ? "En tus favoritos · " : "Favorito compartido · ")
+                        + favoritoActual.etiqueta
         );
 
         if (favoritoActual.estaCompartido()) {

@@ -25,6 +25,7 @@ public class Favorito {
     public final String compartidoConId;
     public final String compartidoConNombre;
     public final String compartidoConCorreo;
+    public final boolean compartido;
     public final String createdAt;
     public final String updatedAt;
 
@@ -37,6 +38,34 @@ public class Favorito {
                     String compartidoConId,
                     String compartidoConNombre,
                     String compartidoConCorreo,
+                    String createdAt,
+                    String updatedAt) {
+        this(
+                id,
+                usuarioId,
+                foodtruckId,
+                etiqueta,
+                nota,
+                duenoNombre,
+                compartidoConId,
+                compartidoConNombre,
+                compartidoConCorreo,
+                false,
+                createdAt,
+                updatedAt
+        );
+    }
+
+    public Favorito(String id,
+                    String usuarioId,
+                    String foodtruckId,
+                    String etiqueta,
+                    String nota,
+                    String duenoNombre,
+                    String compartidoConId,
+                    String compartidoConNombre,
+                    String compartidoConCorreo,
+                    boolean estaCompartidoFlag,
                     String createdAt,
                     String updatedAt) {
         this.id = id == null ? "" : id;
@@ -54,12 +83,22 @@ public class Favorito {
         this.compartidoConCorreo = compartidoConCorreo == null
                 ? ""
                 : compartidoConCorreo.trim();
+        this.compartido = estaCompartidoFlag
+                || !this.compartidoConId.isEmpty()
+                || !this.compartidoConNombre.isEmpty()
+                || !this.compartidoConCorreo.isEmpty();
         this.createdAt = createdAt == null ? "" : createdAt;
         this.updatedAt = updatedAt == null ? "" : updatedAt;
     }
 
+    public boolean esDueno(String miUsuarioId) {
+        return miUsuarioId != null
+                && !miUsuarioId.isEmpty()
+                && usuarioId.equals(miUsuarioId);
+    }
+
     public boolean estaCompartido() {
-        return !compartidoConId.isEmpty();
+        return compartido;
     }
 
     /**
@@ -71,7 +110,7 @@ public class Favorito {
             return "";
         }
 
-        if (usuarioId.equals(miUsuarioId)) {
+        if (esDueno(miUsuarioId)) {
             if (!compartidoConNombre.isEmpty()) {
                 return compartidoConNombre;
             }
@@ -82,14 +121,14 @@ public class Favorito {
     }
 
     public static Favorito desdeJson(JSONObject fila) {
-        if (fila == null || fila.length() == 0) {
+        if (fila == null || fila.length() == 0 || fila.optBoolean("retirado", false)) {
             return null;
         }
 
         String id = texto(fila, "id");
         String foodtruckId = texto(fila, "foodtruck_id");
 
-        if (id.isEmpty() && foodtruckId.isEmpty()) {
+        if (id.isEmpty() || foodtruckId.isEmpty()) {
             return null;
         }
 
@@ -103,6 +142,7 @@ public class Favorito {
                 texto(fila, "compartido_con_id"),
                 texto(fila, "compartido_con_nombre"),
                 texto(fila, "compartido_con_correo"),
+                fila.optBoolean("esta_compartido", false),
                 texto(fila, "created_at"),
                 texto(fila, "updated_at")
         );

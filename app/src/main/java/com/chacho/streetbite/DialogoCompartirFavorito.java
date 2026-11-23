@@ -142,6 +142,16 @@ public final class DialogoCompartirFavorito {
                     return;
                 }
 
+                String miCorreo = Sesion.correo(activity);
+                if (!miCorreo.isEmpty() && correo.equalsIgnoreCase(miCorreo)) {
+                    Toast.makeText(
+                            activity,
+                            "No puedes compartir un favorito contigo mismo.",
+                            Toast.LENGTH_SHORT
+                    ).show();
+                    return;
+                }
+
                 String etiquetaElegida = String.valueOf(
                         spnEtiqueta.getSelectedItem()
                 );
@@ -175,7 +185,9 @@ public final class DialogoCompartirFavorito {
             AlertDialog dialogo,
             Button btnCompartir) {
 
-        SupabaseHelper.obtenerFavorito(
+        // Busca exclusivamente un favorito propio del usuario autenticado para
+        // no modificar ni re-compartir un favorito recibido de otro usuario.
+        SupabaseHelper.obtenerFavoritoPropio(
                 accessToken,
                 usuarioId,
                 foodtruckId,
@@ -302,7 +314,12 @@ public final class DialogoCompartirFavorito {
                     @Override
                     public void onSuccess(Favorito actualizado) {
                         activity.runOnUiThread(() -> {
-                            dialogo.dismiss();
+                            if (activity.isFinishing() || activity.isDestroyed()) {
+                                return;
+                            }
+                            if (dialogo.isShowing()) {
+                                dialogo.dismiss();
+                            }
                             String companero = actualizado != null
                                     ? actualizado.nombreCompanero(
                                             Sesion.usuarioId(activity))
@@ -329,6 +346,9 @@ public final class DialogoCompartirFavorito {
             String mensaje) {
 
         activity.runOnUiThread(() -> {
+            if (activity.isFinishing() || activity.isDestroyed()) {
+                return;
+            }
             btnCompartir.setEnabled(true);
             btnCompartir.setText("Compartir");
             Toast.makeText(activity, mensaje, Toast.LENGTH_LONG).show();

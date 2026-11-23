@@ -103,6 +103,7 @@ public class FavoritoAdapter
             holder.txtNombre.setText("Foodtruck guardado");
             holder.txtRating.setText("--");
             holder.txtEstado.setVisibility(View.GONE);
+            holder.imgLogo.setTag(R.id.tag_imagen, null);
             holder.imgLogo.setScaleType(ImageView.ScaleType.CENTER_CROP);
             holder.imgLogo.setPadding(0, 0, 0, 0);
             holder.imgLogo.setImageResource(R.drawable.tacos);
@@ -111,6 +112,8 @@ public class FavoritoAdapter
         holder.txtEtiqueta.setText(fav.etiqueta);
 
         String miUsuarioId = Sesion.usuarioId(holder.itemView.getContext());
+        boolean esDueno = fav.esDueno(miUsuarioId);
+
         if (fav.estaCompartido()) {
             holder.contenedorTarjeta.setBackgroundResource(
                     R.drawable.bg_tarjeta_compartida
@@ -133,6 +136,18 @@ public class FavoritoAdapter
             holder.txtNota.setVisibility(View.VISIBLE);
         }
 
+        // Solo el propietario puede compartir o editar; el invitado solo puede
+        // dejar de recibir el favorito sin eliminar el original del dueño.
+        if (esDueno) {
+            holder.btnCompartir.setVisibility(View.VISIBLE);
+            holder.btnEditar.setVisibility(View.VISIBLE);
+            holder.btnQuitar.setText("Quitar");
+        } else {
+            holder.btnCompartir.setVisibility(View.GONE);
+            holder.btnEditar.setVisibility(View.GONE);
+            holder.btnQuitar.setText("Dejar de recibir");
+        }
+
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onAbrirDetalle(item, holder.imgLogo);
@@ -140,13 +155,13 @@ public class FavoritoAdapter
         });
 
         holder.btnCompartir.setOnClickListener(v -> {
-            if (listener != null) {
+            if (listener != null && esDueno) {
                 listener.onCompartir(item);
             }
         });
 
         holder.btnEditar.setOnClickListener(v -> {
-            if (listener != null) {
+            if (listener != null && esDueno) {
                 listener.onEditar(item);
             }
         });
@@ -156,6 +171,12 @@ public class FavoritoAdapter
                 listener.onEliminar(item);
             }
         });
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull FavoritoViewHolder holder) {
+        super.onViewRecycled(holder);
+        holder.imgLogo.setTag(R.id.tag_imagen, null);
     }
 
     @Override
@@ -174,6 +195,7 @@ public class FavoritoAdapter
             return;
         }
 
+        vista.setTag(R.id.tag_imagen, null);
         vista.setScaleType(ImageView.ScaleType.CENTER_CROP);
         vista.setPadding(0, 0, 0, 0);
         vista.setImageResource(ft.imagen);

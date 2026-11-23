@@ -165,9 +165,12 @@ public class FavoritosActivity extends BaseActivity {
     }
 
     private void abrirDialogoNuevoFavorito() {
+        String miUsuarioId = Sesion.usuarioId(this);
         Set<String> yaGuardados = new HashSet<>();
         for (Favorito fav : favoritos) {
-            yaGuardados.add(fav.foodtruckId);
+            if (fav.esDueno(miUsuarioId)) {
+                yaGuardados.add(fav.foodtruckId);
+            }
         }
 
         List<Foodtruck> disponibles = new ArrayList<>();
@@ -259,6 +262,15 @@ public class FavoritosActivity extends BaseActivity {
     }
 
     private void abrirDialogoEditarFavorito(FavoritoAdapter.ItemFavorito item) {
+        if (!item.favorito.esDueno(Sesion.usuarioId(this))) {
+            Toast.makeText(
+                    this,
+                    "Solo el propietario puede editar este favorito.",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
         String nombreLocal = item.foodtruck != null
                 ? item.foodtruck.nombre
                 : "Foodtruck guardado";
@@ -276,6 +288,15 @@ public class FavoritosActivity extends BaseActivity {
 
     private void abrirDialogoCompartir(FavoritoAdapter.ItemFavorito item) {
         Favorito fav = item.favorito;
+        if (!fav.esDueno(Sesion.usuarioId(this))) {
+            Toast.makeText(
+                    this,
+                    "Solo el propietario puede compartir este favorito.",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
         String nombreLocal = item.foodtruck != null
                 ? item.foodtruck.nombre
                 : "este foodtruck";
@@ -336,7 +357,7 @@ public class FavoritosActivity extends BaseActivity {
         if (fav.estaCompartido()) {
             builder.setNeutralButton(
                     "Dejar de compartir",
-                    (d, w) -> dejarDeCompartirEnNube(fav.id)
+                    (d, w) -> dejarDeCompartirEnNube(fav.id, true)
             );
         }
 
@@ -349,6 +370,16 @@ public class FavoritosActivity extends BaseActivity {
                     Toast.makeText(
                             this,
                             "Ingresa un correo electrónico válido.",
+                            Toast.LENGTH_SHORT
+                    ).show();
+                    return;
+                }
+
+                String miCorreo = Sesion.correo(this);
+                if (!miCorreo.isEmpty() && correo.equalsIgnoreCase(miCorreo)) {
+                    Toast.makeText(
+                            this,
+                            "No puedes compartir un favorito contigo mismo.",
                             Toast.LENGTH_SHORT
                     ).show();
                     return;
@@ -383,7 +414,12 @@ public class FavoritosActivity extends BaseActivity {
                     @Override
                     public void onSuccess(Favorito actualizado) {
                         runOnUiThread(() -> {
-                            dialogo.dismiss();
+                            if (isFinishing() || isDestroyed()) {
+                                return;
+                            }
+                            if (dialogo.isShowing()) {
+                                dialogo.dismiss();
+                            }
                             if (actualizado != null) {
                                 reemplazarFavorito(actualizado);
                                 refrescarVista();
@@ -404,6 +440,9 @@ public class FavoritosActivity extends BaseActivity {
                     @Override
                     public void onError(String mensaje) {
                         runOnUiThread(() -> {
+                            if (isFinishing() || isDestroyed()) {
+                                return;
+                            }
                             btnCompartir.setEnabled(true);
                             btnCompartir.setText("Compartir");
                             Toast.makeText(
@@ -417,7 +456,7 @@ public class FavoritosActivity extends BaseActivity {
         );
     }
 
-    private void dejarDeCompartirEnNube(String favoritoId) {
+    private void dejarDeCompartirEnNube(String favoritoId, boolean esDueno) {
         String accessToken = Sesion.accessToken(this);
         if (accessToken.isEmpty()) {
             return;
@@ -430,6 +469,20 @@ public class FavoritosActivity extends BaseActivity {
                     @Override
                     public void onSuccess(Favorito actualizado) {
                         runOnUiThread(() -> {
+                            if (isFinishing() || isDestroyed()) {
+                                return;
+                            }
+                            if (!esDueno) {
+                                quitarFavoritoPorId(favoritoId);
+                                refrescarVista();
+                                Toast.makeText(
+                                        FavoritosActivity.this,
+                                        "Dejaste de recibir este favorito.",
+                                        Toast.LENGTH_SHORT
+                                ).show();
+                                return;
+                            }
+
                             if (actualizado != null) {
                                 reemplazarFavorito(actualizado);
                                 refrescarVista();
@@ -446,11 +499,16 @@ public class FavoritosActivity extends BaseActivity {
 
                     @Override
                     public void onError(String mensaje) {
-                        runOnUiThread(() -> Toast.makeText(
-                                FavoritosActivity.this,
-                                "No se pudo actualizar: " + mensaje,
-                                Toast.LENGTH_LONG
-                        ).show());
+                        runOnUiThread(() -> {
+                            if (isFinishing() || isDestroyed()) {
+                                return;
+                            }
+                            Toast.makeText(
+                                    FavoritosActivity.this,
+                                    "No se pudo actualizar: " + mensaje,
+                                    Toast.LENGTH_LONG
+                            ).show();
+                        });
                     }
                 }
         );
@@ -505,6 +563,28 @@ public class FavoritosActivity extends BaseActivity {
         String nombre = item.foodtruck != null
                 ? item.foodtruck.nombre
                 : "este local";
+
+        boolean esDueno = item.favorito.esDueno(Sesion.usuarioId(this));
+
+        if (!esDueno) {
+            AlertDialog confirmacion = new AlertDialog.Builder(this)
+                    .setTitle("Dejar de recibir favorito")
+                    .setMessage(
+                            "¿Quieres dejar de recibir a " + nombre
+                                    + " en tus favoritos? El favorito original del "
+                                    + "propietario no se eliminará."
+                    )
+                    .setNegativeButton("Cancelar", null)
+                    .setPositiveButton(
+                            "Dejar de recibir",
+                            (dialog, which) -> dejarDeCompartirEnNube(item.favorito.id, false)
+                    )
+                    .create();
+
+            confirmacion.show();
+            sonarBotonesDelDialogo(confirmacion);
+            return;
+        }
 
         AlertDialog confirmacion = new AlertDialog.Builder(this)
                 .setTitle("Quitar de favoritos")
