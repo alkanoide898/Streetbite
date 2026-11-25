@@ -25,7 +25,9 @@ public class DetectorAgitacion implements SensorEventListener {
     private static final String CLAVE_ACTIVO = "agitar_activo";
 
     // Fuerza G umbral calibrada para sacudida natural y Virtual Sensors.
-    private static final float UMBRAL_G = 2.15f;
+    private static final float UMBRAL_G = 1.65f;
+    // Cambio brusco entre lecturas consecutivas (detecta vaivén X/Y en emulador).
+    private static final float UMBRAL_DELTA_G = 0.95f;
     private static final long COOLDOWN_MS = 1200L;
 
     private final Context contexto;
@@ -34,6 +36,10 @@ public class DetectorAgitacion implements SensorEventListener {
     private final OnAgitarListener listener;
 
     private boolean escuchando = false;
+    private boolean tieneLecturaPrevia = false;
+    private float prevGx = 0f;
+    private float prevGy = 0f;
+    private float prevGz = 0f;
     private long ultimoDisparo = 0L;
 
     public DetectorAgitacion(Context contexto, OnAgitarListener listener) {
@@ -58,10 +64,11 @@ public class DetectorAgitacion implements SensorEventListener {
             return;
         }
 
+        tieneLecturaPrevia = false;
         escuchando = sensorManager.registerListener(
                 this,
                 acelerometro,
-                SensorManager.SENSOR_DELAY_UI
+                SensorManager.SENSOR_DELAY_GAME
         );
     }
 
@@ -71,6 +78,7 @@ public class DetectorAgitacion implements SensorEventListener {
         }
         sensorManager.unregisterListener(this);
         escuchando = false;
+        tieneLecturaPrevia = false;
     }
 
     @Override
@@ -84,7 +92,20 @@ public class DetectorAgitacion implements SensorEventListener {
         float gz = event.values[2] / SensorManager.GRAVITY_EARTH;
 
         double gForce = Math.sqrt(gx * gx + gy * gy + gz * gz);
-        if (gForce <= UMBRAL_G) {
+
+        double deltaG = 0.0;
+        if (tieneLecturaPrevia) {
+            float dx = gx - prevGx;
+            float dy = gy - prevGy;
+            float dz = gz - prevGz;
+            deltaG = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        }
+        prevGx = gx;
+        prevGy = gy;
+        prevGz = gz;
+        tieneLecturaPrevia = true;
+
+        if (gForce <= UMBRAL_G && deltaG <= UMBRAL_DELTA_G) {
             return;
         }
 
